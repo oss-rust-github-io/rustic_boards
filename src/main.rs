@@ -65,8 +65,6 @@ fn main() {
                     false => None
                 };
                 
-                println!("{:#?}", task_deadline);
-                
                 let task: TaskItem = TaskItem::new(task_name, task_description, task_deadline);
                 println!("{:#?}", task);
             },

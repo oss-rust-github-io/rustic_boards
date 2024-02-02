@@ -60,7 +60,7 @@ impl TaskItem {
             .unwrap()
             .as_millis().to_string();
 
-        let task_id: String = current_timestamp_ms[current_timestamp_ms.len() - DIGITS_IN_TASK_ID..].to_string();
+        let task_id: String = format!("TASK-{}", current_timestamp_ms[current_timestamp_ms.len() - DIGITS_IN_TASK_ID..].to_string());
 
         TaskItem {
             task_id,
