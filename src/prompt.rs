@@ -1,7 +1,9 @@
 use crate::error::AppError;
+use rustic_boards::TaskPriority;
 use chrono::prelude::{NaiveDate, Local};
 use inquire::{
     Text, 
+    Select,
     formatter::DEFAULT_DATE_FORMATTER, 
     CustomType, 
     Confirm, 
@@ -66,4 +68,20 @@ pub fn date_input_prompt(message: &str) -> Result<NaiveDate, AppError>{
             Err(e) => return Err(AppError::ConfirmPromptError(e.to_string()))
         };
     Ok(input)
+}
+
+pub fn select_prompt(message: &str) -> Result<TaskPriority, AppError>{
+    let task_priority: TaskPriority = match Select::new(message, task_priority()).prompt() {
+        Ok(s) => s,
+        Err(e) => return Err(AppError::SelectPromptError(e.to_string()))
+    };
+    Ok(task_priority)
+}
+
+fn task_priority() -> Vec<TaskPriority> {
+    vec![
+        TaskPriority::Low,
+        TaskPriority::Medium,
+        TaskPriority::High
+    ]
 }
