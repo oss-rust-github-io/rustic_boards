@@ -9,6 +9,7 @@ const DIGITS_IN_TASK_ID: usize = 5;
 const APP_DIR_PATH: &str = ".rustic_boards";
 const KANBAN_BOARD_FILE: &str = "boards.bin";
 const ACTIVE_TASKS_PATH: &str = ".tasks";
+const ACTIVE_SUBTASKS_PATH: &str = ".subtasks";
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct TimeStamp {
@@ -226,6 +227,154 @@ impl TaskItem {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SubTaskItem {
+    pub subtask_id: String,
+    pub subtask_name: String,
+    pub subtask_description: String,
+    pub subtask_added_on: TimeStamp,
+    pub subtask_started_on: Option<TimeStamp>,
+    pub subtask_deadline: Option<TimeStamp>,
+    pub subtask_completed_on: Option<TimeStamp>,
+    pub subtask_status: TaskStatus,
+    pub subtask_priority: TaskPriority
+}
+
+impl SubTaskItem {
+    pub fn new (
+        subtask_name: String, 
+        subtask_description: String, 
+        subtask_deadline: Option<TimeStamp>,
+        subtask_priority: TaskPriority
+    ) -> Result<SubTaskItem, AppError> {
+        let current_timestamp_ms: String = match std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH) {
+                Ok(s) => s.as_millis().to_string(),
+                Err(e) => return Err(AppError::CurrentDateTimeFetchError(e.to_string()))
+            };
+
+        let task_id: String = format!("SUBTASK-{}", current_timestamp_ms[
+            current_timestamp_ms.len() - DIGITS_IN_TASK_ID..].to_string());
+
+        let task_item: SubTaskItem = SubTaskItem {
+            subtask_id: task_id.clone(),
+            subtask_name,
+            subtask_description,
+            subtask_added_on: TimeStamp::new(),
+            subtask_started_on: None,
+            subtask_deadline: subtask_deadline,
+            subtask_completed_on: None,
+            subtask_status: TaskStatus::ToDo,
+            subtask_priority
+        };
+        Ok(task_item)
+    }
+
+    pub fn get_task(subtask_id: &String) -> Result<Self, AppError> {
+        let app_dir: String = create_app_dirs()?;
+        let file_path: String = format!("{}\\{}\\{}.bin", app_dir, ACTIVE_SUBTASKS_PATH, subtask_id);
+        let data: Vec<u8> = match std::fs::read(file_path) {
+            Ok(s) => s,
+            Err(e) => return Err(AppError::FileReadError(
+                format!("{} - {}", ACTIVE_SUBTASKS_PATH, e.to_string())))
+        };
+        let task_item: SubTaskItem = match bincode::deserialize(&data) {
+            Ok(s) => s,
+            Err(e) => return Err(AppError::BinaryDeserializationError(e.to_string()))
+        };
+        Ok(task_item)
+    }
+
+    pub fn show_task(subtask_id: &String) {
+        let subtask_item: SubTaskItem = SubTaskItem::get_task(&subtask_id.to_string()).unwrap();
+        let subtask_added_on: String = subtask_item.subtask_added_on.to_naivedate().format("%b %e, %Y").to_string();
+        let subtask_started_on: String = match subtask_item.subtask_started_on {
+            Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
+            None => "None".to_string()
+        };
+        let subtask_deadline: String = match subtask_item.subtask_deadline {
+            Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
+            None => "None".to_string()
+        };
+        let subtask_completed_on: String = match subtask_item.subtask_completed_on {
+            Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
+            None => "None".to_string()
+        };
+        let display_table: TableDisplay = vec![
+            vec!["Subtask ID".to_string(), subtask_item.subtask_id],
+            vec!["Subtask Name".to_string(), subtask_item.subtask_name],
+            vec!["Subtask Description".to_string(), subtask_item.subtask_description],
+            vec!["Subtask Added On".to_string(), subtask_added_on],
+            vec!["Subtask Started On".to_string(), subtask_started_on],
+            vec!["Subtask Deadline".to_string(), subtask_deadline],
+            vec!["Subtask Completed On".to_string(), subtask_completed_on],
+            vec!["Subtask Status".to_string(), subtask_item.subtask_status.to_string()],
+            vec!["Subtask Priority".to_string(), subtask_item.subtask_priority.to_string()],
+        ].table()
+        .display().unwrap();
+        
+        println!("{}", display_table);
+    }
+
+    pub fn change_swimlane(subtask_id: &String, swimlane: &str) -> Result<(), AppError> {
+        let new_swimlane: TaskStatus = match swimlane {
+            "to-do" => TaskStatus::ToDo,
+            "in-progress" => TaskStatus::InProgress,
+            "blocked" => TaskStatus::Blocked,
+            "in-review" => TaskStatus::InReview,
+            "done" => TaskStatus::Done,
+            _ => return Err(AppError::InvalidSwimlanePassed(
+                format!("{} \nPlease select from following options: \n1) to-do 2) in-progress 3) blocked 4) in-review 5) done\n", swimlane.to_string())))
+        };
+
+        let mut subtask_item: SubTaskItem = SubTaskItem::get_task(&subtask_id.to_string()).unwrap();
+
+        if (subtask_item.subtask_status == TaskStatus::ToDo) && (new_swimlane != TaskStatus::ToDo) {
+            subtask_item.subtask_started_on = Some(TimeStamp::new());
+        }
+
+        if new_swimlane == TaskStatus::Done {
+            subtask_item.subtask_completed_on = Some(TimeStamp::new());
+        }
+
+        subtask_item.subtask_status = new_swimlane;
+        subtask_item.write_to_file().unwrap();
+        Ok(())
+    }
+
+    pub fn delete_task(subtask_id: &String) -> Result<(), AppError> {
+        let app_dir: String = create_app_dirs()?;
+        let file_path: String = format!("{}\\{}\\{}.bin", app_dir, ACTIVE_SUBTASKS_PATH, subtask_id);
+        match std::fs::remove_file(&file_path) {
+            Ok(_) => {},
+            Err(e) => return Err(AppError::FileDeleteError(
+                format!("{} - {}", file_path, e.to_string())))
+        };
+        Ok(())
+    }
+
+    pub fn write_to_file(&self) -> Result<(), AppError> {
+        let app_dir: String = create_app_dirs()?;
+        let file_path: String = format!("{}\\{}\\{}.bin", app_dir, ACTIVE_SUBTASKS_PATH, self.subtask_id);
+        let bin_data: Vec<u8> = match bincode::serialize(&self) {
+            Ok(s) => s,
+            Err(e) => return Err(AppError::BinarySerializationError(e.to_string()))
+        };
+        match std::fs::write(&file_path, bin_data) {
+            Ok(_) => {},
+            Err(e) => return Err(AppError::FileWriteError(
+                format!("{} - {}", file_path, e.to_string())))
+        };
+        Ok(())
+    }
+
+    pub fn check_if_file_exists(task_id: &String) -> Result<bool, AppError> {
+        let app_dir: String = create_app_dirs()?;
+        let file_path: String = format!("{}\\{}\\{}.bin", app_dir, ACTIVE_SUBTASKS_PATH, task_id);
+        Ok(Path::new(&file_path).exists())
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct KanbanBoard {
     boards: HashMap<TaskStatus, Vec<String>>
@@ -238,7 +387,7 @@ impl KanbanBoard {
         }
     }
 
-    pub fn show(&self, swimlanes: &str) -> Result<(), AppError> {
+    pub fn show_tasks(&self, swimlanes: &str) -> Result<(), AppError> {
         let swimlane_to_show: Vec<TaskStatus> = match swimlanes {
             "all" => vec![TaskStatus::ToDo, TaskStatus::InProgress, TaskStatus::Blocked, TaskStatus::InReview, TaskStatus::Done],
             "to-do" => vec![TaskStatus::ToDo],
@@ -274,6 +423,53 @@ impl KanbanBoard {
                 .title(vec![
                     "Task ID".cell().bold(true),
                     "Task Name".cell().bold(true),
+                    "Priority".cell().bold(true),
+                    "Deadline".cell().bold(true),
+                ])
+                .display().unwrap();
+            
+            println!("{}", display_table);
+        }
+
+        Ok(())
+    }
+
+    pub fn show_subtasks(&self, swimlanes: &str) -> Result<(), AppError> {
+        let swimlane_to_show: Vec<TaskStatus> = match swimlanes {
+            "all" => vec![TaskStatus::ToDo, TaskStatus::InProgress, TaskStatus::Blocked, TaskStatus::InReview, TaskStatus::Done],
+            "to-do" => vec![TaskStatus::ToDo],
+            "in-progress" => vec![TaskStatus::InProgress],
+            "blocked" => vec![TaskStatus::Blocked],
+            "in-review" => vec![TaskStatus::InReview],
+            "done" => vec![TaskStatus::Done],
+            _ => return Err(AppError::InvalidSwimlanePassed(
+                format!("{} \nPlease select from following options: \n1) all 2) to-do 3) in-progress 4) blocked 5) in-review 6) done\n", swimlanes.to_string())))
+        };
+
+        for swimlane in swimlane_to_show {
+            let tasks: &Vec<String> = self.boards.get(&swimlane).unwrap();
+            println!("====================");
+            println!("{:#?}", swimlane.to_string());
+            println!("====================");
+            
+            let mut display_table: Vec<Vec<String>> = Vec::new();
+            for subtask_id in tasks {
+                if SubTaskItem::check_if_file_exists(subtask_id).unwrap() == true {
+                    let subtask_item: SubTaskItem = SubTaskItem::get_task(subtask_id).unwrap();
+                    let subtask_deadline: String = match subtask_item.subtask_deadline {
+                        Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
+                        None => "None".to_string()
+                    };
+                    display_table.push(
+                        vec![subtask_id.clone(), subtask_item.subtask_name, subtask_item.subtask_priority.to_string(), subtask_deadline]
+                    )
+                }
+            }
+
+            let display_table: TableDisplay = display_table.table()
+                .title(vec![
+                    "Subtask ID".cell().bold(true),
+                    "Subtask Name".cell().bold(true),
                     "Priority".cell().bold(true),
                     "Deadline".cell().bold(true),
                 ])
@@ -341,6 +537,54 @@ impl KanbanBoard {
                         }
                     }
                 }
+
+                if SubTaskItem::check_if_file_exists(task_id).unwrap() == true {
+                    let subtask_item: SubTaskItem = SubTaskItem::get_task(task_id).unwrap();
+
+                    if keyword == "no-deadline" {
+                        if subtask_item.subtask_deadline == None {
+                            display_table.push(
+                                vec![task_id.clone(), subtask_item.subtask_name, subtask_item.subtask_priority.to_string(), "None".to_string()]
+                            )
+                        }
+                    } else {
+                        if subtask_item.subtask_deadline != None {
+                            let subtask_deadline: NaiveDate = subtask_item.subtask_deadline.unwrap().to_naivedate();
+                            match keyword {
+                                "past-deadline" => {
+                                    if subtask_deadline < TimeStamp::new().to_naivedate() {
+                                        display_table.push(
+                                            vec![task_id.clone(), subtask_item.subtask_name, subtask_item.subtask_priority.to_string(), subtask_deadline.to_string()]
+                                        )
+                                    }
+                                },
+                                "today" => {
+                                    if subtask_deadline == TimeStamp::new().to_naivedate() {
+                                        display_table.push(
+                                            vec![task_id.clone(), subtask_item.subtask_name, subtask_item.subtask_priority.to_string(), subtask_deadline.to_string()]
+                                        )
+                                    }
+                                },
+                                "tomorrow" => {
+                                    if subtask_deadline == TimeStamp::new().to_naivedate().checked_add_days(Days::new(1)).unwrap() {
+                                        display_table.push(
+                                            vec![task_id.clone(), subtask_item.subtask_name, subtask_item.subtask_priority.to_string(), subtask_deadline.to_string()]
+                                        )
+                                    }
+                                },
+                                "after-tomorrow" => {
+                                    if subtask_deadline > TimeStamp::new().to_naivedate().checked_add_days(Days::new(1)).unwrap() {
+                                        display_table.push(
+                                            vec![task_id.clone(), subtask_item.subtask_name, subtask_item.subtask_priority.to_string(), subtask_deadline.to_string()]
+                                        )
+                                    }
+                                },
+                                _ => return Err(AppError::InvalidDeadlineKeyword (
+                                    format!("{} \nPlease select from following options: \n1) past-deadline 2) today 3) tomorrow 4) after-tomorrow 5) no-deadline\n", keyword)))
+                            }
+                        }
+                    }
+                }
             }
 
             let display_table: TableDisplay = display_table.table()
@@ -393,6 +637,40 @@ impl KanbanBoard {
                             if task_item.task_priority == TaskPriority::Low {
                                 display_table.push(
                                     vec![task_id.clone(), task_item.task_name, task_item.task_priority.to_string(), task_deadline.to_string()]
+                                )
+                            }
+                        },
+                        _ => return Err(AppError::InvalidPriorityKeyword (
+                            format!("{} \nPlease select from following options: \n1) high 2) medium 3) low\n", keyword)))
+                    }
+                }
+
+                if SubTaskItem::check_if_file_exists(task_id).unwrap() == true {
+                    let subtask_item: SubTaskItem = SubTaskItem::get_task(task_id).unwrap();
+                    let subtask_deadline: String = match subtask_item.subtask_deadline {
+                        Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
+                        None => "None".to_string()
+                    };
+
+                    match keyword {
+                        "high" => {
+                            if subtask_item.subtask_priority == TaskPriority::High {
+                                display_table.push(
+                                    vec![task_id.clone(), subtask_item.subtask_name, subtask_item.subtask_priority.to_string(), subtask_deadline.to_string()]
+                                )
+                            }
+                        },
+                        "medium" => {
+                            if subtask_item.subtask_priority == TaskPriority::Medium {
+                                display_table.push(
+                                    vec![task_id.clone(), subtask_item.subtask_name, subtask_item.subtask_priority.to_string(), subtask_deadline.to_string()]
+                                )
+                            }
+                        },
+                        "low" => {
+                            if subtask_item.subtask_priority == TaskPriority::Low {
+                                display_table.push(
+                                    vec![task_id.clone(), subtask_item.subtask_name, subtask_item.subtask_priority.to_string(), subtask_deadline.to_string()]
                                 )
                             }
                         },
@@ -515,6 +793,11 @@ pub fn create_app_dirs() -> Result<String, AppError> {
         Ok(_) => {},
         Err(e) => return Err(AppError::HomeDirectoryPermissionError(
             format!("{} - {}", ACTIVE_TASKS_PATH, e.to_string())))
+    };
+    match std::fs::create_dir_all(format!("{}\\{}", app_dir_path, ACTIVE_SUBTASKS_PATH)) {
+        Ok(_) => {},
+        Err(e) => return Err(AppError::HomeDirectoryPermissionError(
+            format!("{} - {}", ACTIVE_SUBTASKS_PATH, e.to_string())))
     };
     Ok(app_dir_path)
 }
