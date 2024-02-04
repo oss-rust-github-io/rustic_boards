@@ -17,7 +17,7 @@ pub enum AppError {
     InvalidCommand(String),
     InvalidDeadlineKeyword(String),
     InvalidPriorityKeyword(String),
-    TaskNotFound(String)
+    TaskNotFound(String),
 }
 
 impl std::fmt::Display for AppError {
@@ -27,14 +27,24 @@ impl std::fmt::Display for AppError {
             AppError::ConfirmPromptError(err) => write!(f, "[ConfirmPromptError] {}", err),
             AppError::DateInputPromptError(err) => write!(f, "[DateInputPromptError] {}", err),
             AppError::SelectPromptError(err) => write!(f, "[SelectPromptError] {}", err),
-            AppError::HomeDirectoryInaccessibleError(err) => write!(f, "[HomeDirectoryInaccessibleError] {}", err),
-            AppError::HomeDirectoryPermissionError(err) => write!(f, "[HomeDirectoryPermissionError] {}", err),
-            AppError::BinarySerializationError(err) => write!(f, "[BinarySerializationError] {}", err),
-            AppError::BinaryDeserializationError(err) => write!(f, "[BinaryDeserializationError] {}", err),
+            AppError::HomeDirectoryInaccessibleError(err) => {
+                write!(f, "[HomeDirectoryInaccessibleError] {}", err)
+            }
+            AppError::HomeDirectoryPermissionError(err) => {
+                write!(f, "[HomeDirectoryPermissionError] {}", err)
+            }
+            AppError::BinarySerializationError(err) => {
+                write!(f, "[BinarySerializationError] {}", err)
+            }
+            AppError::BinaryDeserializationError(err) => {
+                write!(f, "[BinaryDeserializationError] {}", err)
+            }
             AppError::FileReadError(err) => write!(f, "[FileReadError] {}", err),
             AppError::FileWriteError(err) => write!(f, "[FileWriteError] {}", err),
             AppError::FileDeleteError(err) => write!(f, "[FileDeleteError] {}", err),
-            AppError::CurrentDateTimeFetchError(err) => write!(f, "[CurrentDateTimeFetchError] {}", err),
+            AppError::CurrentDateTimeFetchError(err) => {
+                write!(f, "[CurrentDateTimeFetchError] {}", err)
+            }
             AppError::InvalidSwimlanePassed(err) => write!(f, "[InvalidSwimlanePassed] {}", err),
             AppError::InvalidCommand(err) => write!(f, "[InvalidCommand] {}", err),
             AppError::InvalidDeadlineKeyword(err) => write!(f, "[InvalidDeadlineKeyword] {}", err),

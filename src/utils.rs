@@ -1,19 +1,15 @@
 use crate::{
+    constants::{ACTIVE_SUBTASKS_PATH, ACTIVE_TASKS_PATH, APP_DIR_PATH},
     error::AppError,
-    constants::{
-        APP_DIR_PATH, 
-        ACTIVE_TASKS_PATH, 
-        ACTIVE_SUBTASKS_PATH
-    }
 };
 use chrono::prelude::*;
-use serde::{ Deserialize, Serialize };
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct TimeStamp {
     year: i32,
     month: u32,
-    day: u32
+    day: u32,
 }
 
 impl TimeStamp {
@@ -22,7 +18,7 @@ impl TimeStamp {
         TimeStamp {
             year: current_datetime.year(),
             month: current_datetime.month(),
-            day: current_datetime.day()
+            day: current_datetime.day(),
         }
     }
 
@@ -30,20 +26,20 @@ impl TimeStamp {
         TimeStamp {
             year: input_date.year(),
             month: input_date.month(),
-            day: input_date.day()
+            day: input_date.day(),
         }
     }
 
     pub fn to_naivedate(self) -> NaiveDate {
         NaiveDate::from_ymd_opt(self.year, self.month, self.day).unwrap()
-    } 
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum TaskPriority {
     High,
     Medium,
-    Low
+    Low,
 }
 
 impl std::fmt::Display for TaskPriority {
@@ -80,8 +76,11 @@ impl std::fmt::Display for TaskStatus {
 fn get_users_home_dir() -> Result<String, AppError> {
     match home::home_dir() {
         Some(path) => return Ok(path.display().to_string()),
-        None => return Err(AppError::HomeDirectoryInaccessibleError(
-            "Unable to determine user's home directory.".to_string())),
+        None => {
+            return Err(AppError::HomeDirectoryInaccessibleError(
+                "Unable to determine user's home directory.".to_string(),
+            ))
+        }
     }
 }
 
@@ -90,19 +89,34 @@ pub fn create_app_dirs() -> Result<String, AppError> {
     let app_dir_path: String = format!("{}\\{}", home_dir, APP_DIR_PATH);
 
     match std::fs::create_dir_all(&app_dir_path) {
-        Ok(_) => {},
-        Err(e) => return Err(AppError::HomeDirectoryPermissionError(
-            format!("{} - {}", app_dir_path, e.to_string())))
+        Ok(_) => {}
+        Err(e) => {
+            return Err(AppError::HomeDirectoryPermissionError(format!(
+                "{} - {}",
+                app_dir_path,
+                e.to_string()
+            )))
+        }
     };
     match std::fs::create_dir_all(format!("{}\\{}", app_dir_path, ACTIVE_TASKS_PATH)) {
-        Ok(_) => {},
-        Err(e) => return Err(AppError::HomeDirectoryPermissionError(
-            format!("{} - {}", ACTIVE_TASKS_PATH, e.to_string())))
+        Ok(_) => {}
+        Err(e) => {
+            return Err(AppError::HomeDirectoryPermissionError(format!(
+                "{} - {}",
+                ACTIVE_TASKS_PATH,
+                e.to_string()
+            )))
+        }
     };
     match std::fs::create_dir_all(format!("{}\\{}", app_dir_path, ACTIVE_SUBTASKS_PATH)) {
-        Ok(_) => {},
-        Err(e) => return Err(AppError::HomeDirectoryPermissionError(
-            format!("{} - {}", ACTIVE_SUBTASKS_PATH, e.to_string())))
+        Ok(_) => {}
+        Err(e) => {
+            return Err(AppError::HomeDirectoryPermissionError(format!(
+                "{} - {}",
+                ACTIVE_SUBTASKS_PATH,
+                e.to_string()
+            )))
+        }
     };
     Ok(app_dir_path)
 }

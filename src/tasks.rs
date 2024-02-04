@@ -1,14 +1,13 @@
 use crate::{
-    utils::create_app_dirs,
-    constants::{DIGITS_IN_TASK_ID, ACTIVE_TASKS_PATH},
+    constants::{ACTIVE_TASKS_PATH, DIGITS_IN_TASK_ID},
     error::AppError,
-    TimeStamp, 
-    TaskStatus, 
-    TaskPriority
+    links::TaskToSubtaskMap,
+    utils::create_app_dirs,
+    TaskPriority, TaskStatus, TimeStamp,
 };
-use std::path::Path;
-use serde::{ Deserialize, Serialize };
 use cli_table::{Table, TableDisplay};
+use serde::{Deserialize, Serialize};
+use std::path::Path;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TaskItem {
@@ -20,24 +19,26 @@ pub struct TaskItem {
     pub task_deadline: Option<TimeStamp>,
     pub task_completed_on: Option<TimeStamp>,
     pub task_status: TaskStatus,
-    pub task_priority: TaskPriority
+    pub task_priority: TaskPriority,
 }
 
 impl TaskItem {
-    pub fn new (
-        task_name: String, 
-        task_description: String, 
+    pub fn new(
+        task_name: String,
+        task_description: String,
         task_deadline: Option<TimeStamp>,
-        task_priority: TaskPriority
+        task_priority: TaskPriority,
     ) -> Result<TaskItem, AppError> {
-        let current_timestamp_ms: String = match std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH) {
+        let current_timestamp_ms: String =
+            match std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH) {
                 Ok(s) => s.as_millis().to_string(),
-                Err(e) => return Err(AppError::CurrentDateTimeFetchError(e.to_string()))
+                Err(e) => return Err(AppError::CurrentDateTimeFetchError(e.to_string())),
             };
 
-        let task_id: String = format!("TASK-{}", current_timestamp_ms[
-            current_timestamp_ms.len() - DIGITS_IN_TASK_ID..].to_string());
+        let task_id: String = format!(
+            "TASK-{}",
+            current_timestamp_ms[current_timestamp_ms.len() - DIGITS_IN_TASK_ID..].to_string()
+        );
 
         let task_item: TaskItem = TaskItem {
             task_id: task_id.clone(),
@@ -48,7 +49,7 @@ impl TaskItem {
             task_deadline: task_deadline,
             task_completed_on: None,
             task_status: TaskStatus::ToDo,
-            task_priority
+            task_priority,
         };
         Ok(task_item)
     }
@@ -58,31 +59,43 @@ impl TaskItem {
         let file_path: String = format!("{}\\{}\\{}.bin", app_dir, ACTIVE_TASKS_PATH, task_id);
         let data: Vec<u8> = match std::fs::read(file_path) {
             Ok(s) => s,
-            Err(e) => return Err(AppError::FileReadError(
-                format!("{} - {}", ACTIVE_TASKS_PATH, e.to_string())))
+            Err(e) => {
+                return Err(AppError::FileReadError(format!(
+                    "{} - {}",
+                    ACTIVE_TASKS_PATH,
+                    e.to_string()
+                )))
+            }
         };
         let task_item: TaskItem = match bincode::deserialize(&data) {
             Ok(s) => s,
-            Err(e) => return Err(AppError::BinaryDeserializationError(e.to_string()))
+            Err(e) => return Err(AppError::BinaryDeserializationError(e.to_string())),
         };
         Ok(task_item)
     }
 
     pub fn show_task(task_id: &String) {
+        let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file().unwrap();
         let task_item: TaskItem = TaskItem::get_task(&task_id.to_string()).unwrap();
-        let task_added_on: String = task_item.task_added_on.to_naivedate().format("%b %e, %Y").to_string();
+        let task_added_on: String = task_item
+            .task_added_on
+            .to_naivedate()
+            .format("%b %e, %Y")
+            .to_string();
         let task_started_on: String = match task_item.task_started_on {
             Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
-            None => "None".to_string()
+            None => "None".to_string(),
         };
         let task_deadline: String = match task_item.task_deadline {
             Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
-            None => "None".to_string()
+            None => "None".to_string(),
         };
         let task_completed_on: String = match task_item.task_completed_on {
             Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
-            None => "None".to_string()
+            None => "None".to_string(),
         };
+        let subtasks_list: Vec<String> = tasks_link.get_subtasks_list(task_id);
+
         let display_table: TableDisplay = vec![
             vec!["Task ID".to_string(), task_item.task_id],
             vec!["Task Name".to_string(), task_item.task_name],
@@ -92,10 +105,23 @@ impl TaskItem {
             vec!["Task Deadline".to_string(), task_deadline],
             vec!["Task Completed On".to_string(), task_completed_on],
             vec!["Task Status".to_string(), task_item.task_status.to_string()],
-            vec!["Task Priority".to_string(), task_item.task_priority.to_string()],
-        ].table()
-        .display().unwrap();
-        
+            vec![
+                "Task Priority".to_string(),
+                task_item.task_priority.to_string(),
+            ],
+            vec![
+                "Subtasks".to_string(),
+                subtasks_list
+                    .iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", "),
+            ],
+        ]
+        .table()
+        .display()
+        .unwrap();
+
         println!("{}", display_table);
     }
 
@@ -129,9 +155,14 @@ impl TaskItem {
         let app_dir: String = create_app_dirs()?;
         let file_path: String = format!("{}\\{}\\{}.bin", app_dir, ACTIVE_TASKS_PATH, task_id);
         match std::fs::remove_file(&file_path) {
-            Ok(_) => {},
-            Err(e) => return Err(AppError::FileDeleteError(
-                format!("{} - {}", file_path, e.to_string())))
+            Ok(_) => {}
+            Err(e) => {
+                return Err(AppError::FileDeleteError(format!(
+                    "{} - {}",
+                    file_path,
+                    e.to_string()
+                )))
+            }
         };
         Ok(())
     }
@@ -141,12 +172,17 @@ impl TaskItem {
         let file_path: String = format!("{}\\{}\\{}.bin", app_dir, ACTIVE_TASKS_PATH, self.task_id);
         let bin_data: Vec<u8> = match bincode::serialize(&self) {
             Ok(s) => s,
-            Err(e) => return Err(AppError::BinarySerializationError(e.to_string()))
+            Err(e) => return Err(AppError::BinarySerializationError(e.to_string())),
         };
         match std::fs::write(&file_path, bin_data) {
-            Ok(_) => {},
-            Err(e) => return Err(AppError::FileWriteError(
-                format!("{} - {}", file_path, e.to_string())))
+            Ok(_) => {}
+            Err(e) => {
+                return Err(AppError::FileWriteError(format!(
+                    "{} - {}",
+                    file_path,
+                    e.to_string()
+                )))
+            }
         };
         Ok(())
     }

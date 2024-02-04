@@ -1,32 +1,20 @@
-use crate::{
-    error::AppError,
-    utils::TaskPriority
-};
-use chrono::prelude::{NaiveDate, Local};
+use crate::{boards::KanbanBoard, error::AppError, utils::TaskPriority};
+use chrono::prelude::{Local, NaiveDate};
 use inquire::{
-    Text, 
-    Select,
-    formatter::DEFAULT_DATE_FORMATTER, 
-    CustomType, 
-    Confirm, 
-    ui::RenderConfig, 
-    validator::Validation
+    formatter::DEFAULT_DATE_FORMATTER, ui::RenderConfig, validator::Validation, Confirm,
+    CustomType, Select, Text,
 };
 
 pub fn text_input_prompt(message: &str, default: Option<&str>) -> Result<String, AppError> {
     let input: String = match default {
-        Some(s) => {
-            match Text::new(message).with_default(s).prompt() {
-                Ok(s) => s,
-                Err(e) => return Err(AppError::TextInputPromptError(e.to_string()))
-            }
+        Some(s) => match Text::new(message).with_default(s).prompt() {
+            Ok(s) => s,
+            Err(e) => return Err(AppError::TextInputPromptError(e.to_string())),
         },
-        None => {
-            match Text::new(message).prompt() {
-                Ok(s) => s,
-                Err(e) => return Err(AppError::TextInputPromptError(e.to_string()))
-            }
-        }
+        None => match Text::new(message).prompt() {
+            Ok(s) => s,
+            Err(e) => return Err(AppError::TextInputPromptError(e.to_string())),
+        },
     };
     Ok(input)
 }
@@ -53,14 +41,15 @@ pub fn confirm_prompt(message: &str, help_message: Option<&str>) -> Result<bool,
         },
         render_config: RenderConfig::default(),
     })
-    .prompt() {
+    .prompt()
+    {
         Ok(s) => s,
-        Err(e) => return Err(AppError::ConfirmPromptError(e.to_string()))
+        Err(e) => return Err(AppError::ConfirmPromptError(e.to_string())),
     };
     Ok(input)
 }
 
-pub fn date_input_prompt(message: &str) -> Result<NaiveDate, AppError>{
+pub fn date_input_prompt(message: &str) -> Result<NaiveDate, AppError> {
     let input = match CustomType::<NaiveDate>::new(message)
         .with_placeholder("dd/mm/yyyy")
         .with_parser(&|i| NaiveDate::parse_from_str(i, "%d/%m/%Y").map_err(|_e| ()))
@@ -75,25 +64,30 @@ pub fn date_input_prompt(message: &str) -> Result<NaiveDate, AppError>{
                 Ok(Validation::Valid)
             }
         })
-        .prompt() {
-            Ok(s) => s,
-            Err(e) => return Err(AppError::ConfirmPromptError(e.to_string()))
-        };
+        .prompt()
+    {
+        Ok(s) => s,
+        Err(e) => return Err(AppError::ConfirmPromptError(e.to_string())),
+    };
     Ok(input)
 }
 
-pub fn select_prompt(message: &str) -> Result<TaskPriority, AppError>{
+pub fn select_prompt(message: &str) -> Result<TaskPriority, AppError> {
     let task_priority: TaskPriority = match Select::new(message, task_priority()).prompt() {
         Ok(s) => s,
-        Err(e) => return Err(AppError::SelectPromptError(e.to_string()))
+        Err(e) => return Err(AppError::SelectPromptError(e.to_string())),
     };
     Ok(task_priority)
 }
 
 fn task_priority() -> Vec<TaskPriority> {
-    vec![
-        TaskPriority::Low,
-        TaskPriority::Medium,
-        TaskPriority::High
-    ]
+    vec![TaskPriority::Low, TaskPriority::Medium, TaskPriority::High]
+}
+
+pub fn tasks_select_prompt(message: &str, boards: &KanbanBoard) -> Result<String, AppError> {
+    let tasks_list: String = match Select::new(message, boards.get_tasks_list()).prompt() {
+        Ok(s) => s,
+        Err(e) => return Err(AppError::SelectPromptError(e.to_string())),
+    };
+    Ok(tasks_list)
 }
