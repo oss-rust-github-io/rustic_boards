@@ -107,6 +107,11 @@ fn main() {
                     false => println!("{}\n", AppError::TaskNotFound(task_id.to_string()))
                 }
             },
+            ["delete", "task", task_id] => {
+                let task_item: TaskItem = TaskItem::get_task(&task_id.to_string()).unwrap();
+                boards.delete_task(task_id.to_string(), task_item.task_status);
+                TaskItem::delete_task(&task_id.to_string()).unwrap();
+            }
             ["show", swimlane] => {
                 match boards.show(swimlane) {
                     Ok(_) => {},

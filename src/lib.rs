@@ -193,6 +193,17 @@ impl TaskItem {
         Ok(())
     }
 
+    pub fn delete_task(task_id: &String) -> Result<(), AppError> {
+        let app_dir: String = create_app_dirs()?;
+        let file_path: String = format!("{}\\{}\\{}.bin", app_dir, ACTIVE_TASKS_PATH, task_id);
+        match std::fs::remove_file(&file_path) {
+            Ok(_) => {},
+            Err(e) => return Err(AppError::FileDeleteError(
+                format!("{} - {}", file_path, e.to_string())))
+        };
+        Ok(())
+    }
+
     pub fn write_to_file(&self) -> Result<(), AppError> {
         let app_dir: String = create_app_dirs()?;
         let file_path: String = format!("{}\\{}\\{}.bin", app_dir, ACTIVE_TASKS_PATH, self.task_id);
@@ -428,7 +439,7 @@ impl KanbanBoard {
         };
         
         let mut tasks_list: Vec<String> = self.boards.get(&current_swimlane).unwrap().to_vec();
-        let index = tasks_list.iter().position(|x| *x == task_id).unwrap();
+        let index: usize = tasks_list.iter().position(|x| *x == task_id).unwrap();
         tasks_list.remove(index);
         self.boards.insert(current_swimlane, tasks_list);
 
@@ -438,6 +449,14 @@ impl KanbanBoard {
         self.write_to_file().unwrap();
 
         Ok(())
+    }
+
+    pub fn delete_task(&mut self, task_id: String, swimlane: TaskStatus) {
+        let mut tasks_list: Vec<String> = self.boards.get(&swimlane).unwrap().to_vec();
+        let index: usize = tasks_list.iter().position(|x| *x == task_id).unwrap();
+        tasks_list.remove(index);
+        self.boards.insert(swimlane, tasks_list);
+        self.write_to_file().unwrap();
     }
 
     pub fn load_from_file() -> Result<Self, AppError> {
