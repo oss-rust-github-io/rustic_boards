@@ -1,10 +1,24 @@
-mod prompt;
+mod utils;
 mod error;
+mod tasks;
+mod prompt;
+mod boards;
+mod subtasks;
+mod constants;
+
 use error::AppError;
 use chrono::prelude::NaiveDate;
 use std::io::{self, Write};
-use rustic_boards::{TaskStatus, TaskItem, SubTaskItem, TaskPriority, TimeStamp, KanbanBoard};
-use prompt::{text_input_prompt, confirm_prompt, date_input_prompt, select_prompt};
+use tasks::TaskItem;
+use subtasks::SubTaskItem;
+use boards::KanbanBoard;
+use utils::{TaskStatus, TaskPriority, TimeStamp};
+use prompt::{
+    text_input_prompt, 
+    confirm_prompt, 
+    date_input_prompt, 
+    select_prompt
+};
 
 fn main() {
     let boards_file_exists: bool = KanbanBoard::check_if_file_exists().unwrap();

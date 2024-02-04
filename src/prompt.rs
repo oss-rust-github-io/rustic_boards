@@ -1,5 +1,7 @@
-use crate::error::AppError;
-use rustic_boards::TaskPriority;
+use crate::{
+    error::AppError,
+    utils::TaskPriority
+};
 use chrono::prelude::{NaiveDate, Local};
 use inquire::{
     Text, 
