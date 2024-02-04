@@ -14,6 +14,8 @@ pub enum AppError {
     CurrentDateTimeFetchError(String),
     InvalidSwimlanePassed(String),
     InvalidCommand(String),
+    InvalidDeadlineKeyword(String),
+    InvalidPriorityKeyword(String),
     TaskNotFound(String)
 }
 
@@ -33,6 +35,8 @@ impl std::fmt::Display for AppError {
             AppError::CurrentDateTimeFetchError(err) => write!(f, "[CurrentDateTimeFetchError] {}", err),
             AppError::InvalidSwimlanePassed(err) => write!(f, "[InvalidSwimlanePassed] {}", err),
             AppError::InvalidCommand(err) => write!(f, "[InvalidCommand] {}", err),
+            AppError::InvalidDeadlineKeyword(err) => write!(f, "[InvalidDeadlineKeyword] {}", err),
+            AppError::InvalidPriorityKeyword(err) => write!(f, "[InvalidPriorityKeyword] {}", err),
             AppError::TaskNotFound(err) => write!(f, "[TaskNotFound] {}", err),
         }
     }

@@ -1,6 +1,6 @@
 mod error;
 use error::AppError;
-use chrono::prelude::*;
+use chrono::{Days, prelude::*};
 use std::{collections::HashMap, path::Path};
 use serde::{ Deserialize, Serialize };
 use cli_table::{Cell, Style, Table, TableDisplay};
@@ -10,7 +10,7 @@ const APP_DIR_PATH: &str = ".rustic_boards";
 const KANBAN_BOARD_FILE: &str = "boards.bin";
 const ACTIVE_TASKS_PATH: &str = ".tasks";
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct TimeStamp {
     year: i32,
     month: u32,
@@ -40,7 +40,7 @@ impl TimeStamp {
     } 
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum TaskPriority {
     High,
     Medium,
@@ -136,6 +136,63 @@ impl TaskItem {
         Ok(task_item)
     }
 
+    pub fn show_task(task_id: &String) {
+        let task_item: TaskItem = TaskItem::get_task(&task_id.to_string()).unwrap();
+        let task_added_on: String = task_item.task_added_on.to_naivedate().format("%b %e, %Y").to_string();
+        let task_started_on: String = match task_item.task_started_on {
+            Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
+            None => "None".to_string()
+        };
+        let task_deadline: String = match task_item.task_deadline {
+            Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
+            None => "None".to_string()
+        };
+        let task_completed_on: String = match task_item.task_completed_on {
+            Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
+            None => "None".to_string()
+        };
+        let display_table: TableDisplay = vec![
+            vec!["Task ID".to_string(), task_item.task_id],
+            vec!["Task Name".to_string(), task_item.task_name],
+            vec!["Task Description".to_string(), task_item.task_description],
+            vec!["Task Added On".to_string(), task_added_on],
+            vec!["Task Started On".to_string(), task_started_on],
+            vec!["Task Deadline".to_string(), task_deadline],
+            vec!["Task Completed On".to_string(), task_completed_on],
+            vec!["Task Status".to_string(), task_item.task_status.to_string()],
+            vec!["Task Priority".to_string(), task_item.task_priority.to_string()],
+        ].table()
+        .display().unwrap();
+        
+        println!("{}", display_table);
+    }
+
+    pub fn change_swimlane(task_id: &String, swimlane: &str) -> Result<(), AppError> {
+        let new_swimlane: TaskStatus = match swimlane {
+            "to-do" => TaskStatus::ToDo,
+            "in-progress" => TaskStatus::InProgress,
+            "blocked" => TaskStatus::Blocked,
+            "in-review" => TaskStatus::InReview,
+            "done" => TaskStatus::Done,
+            _ => return Err(AppError::InvalidSwimlanePassed(
+                format!("{} \nPlease select from following options: \n1) to-do 2) in-progress 3) blocked 4) in-review 5) done\n", swimlane.to_string())))
+        };
+
+        let mut task_item: TaskItem = TaskItem::get_task(&task_id.to_string()).unwrap();
+
+        if (task_item.task_status == TaskStatus::ToDo) && (new_swimlane != TaskStatus::ToDo) {
+            task_item.task_started_on = Some(TimeStamp::new());
+        }
+
+        if new_swimlane == TaskStatus::Done {
+            task_item.task_completed_on = Some(TimeStamp::new());
+        }
+
+        task_item.task_status = new_swimlane;
+        task_item.write_to_file().unwrap();
+        Ok(())
+    }
+
     pub fn write_to_file(&self) -> Result<(), AppError> {
         let app_dir: String = create_app_dirs()?;
         let file_path: String = format!("{}\\{}\\{}.bin", app_dir, ACTIVE_TASKS_PATH, self.task_id);
@@ -203,13 +260,145 @@ impl KanbanBoard {
             }
 
             let display_table: TableDisplay = display_table.table()
-            .title(vec![
-                "Task ID".cell().bold(true),
-                "Task Name".cell().bold(true),
-                "Priority".cell().bold(true),
-                "Deadline".cell().bold(true),
-            ])
-            .display().unwrap();
+                .title(vec![
+                    "Task ID".cell().bold(true),
+                    "Task Name".cell().bold(true),
+                    "Priority".cell().bold(true),
+                    "Deadline".cell().bold(true),
+                ])
+                .display().unwrap();
+            
+            println!("{}", display_table);
+        }
+
+        Ok(())
+    }
+
+    pub fn filter_deadline(&self, keyword: &str) -> Result<(), AppError> {
+        for swimlane in vec![TaskStatus::ToDo, TaskStatus::InProgress, TaskStatus::Blocked, TaskStatus::InReview] {
+            let tasks: &Vec<String> = self.boards.get(&swimlane).unwrap();
+            println!("====================");
+            println!("{:#?}", swimlane.to_string());
+            println!("====================");
+
+            let mut display_table: Vec<Vec<String>> = Vec::new();
+            for task_id in tasks {
+                if TaskItem::check_if_file_exists(task_id).unwrap() == true {
+                    let task_item: TaskItem = TaskItem::get_task(task_id).unwrap();
+
+                    if keyword == "no-deadline" {
+                        if task_item.task_deadline == None {
+                            display_table.push(
+                                vec![task_id.clone(), task_item.task_name, task_item.task_priority.to_string(), "None".to_string()]
+                            )
+                        }
+                    } else {
+                        if task_item.task_deadline != None {
+                            let task_deadline: NaiveDate = task_item.task_deadline.unwrap().to_naivedate();
+                            match keyword {
+                                "past-deadline" => {
+                                    if task_deadline < TimeStamp::new().to_naivedate() {
+                                        display_table.push(
+                                            vec![task_id.clone(), task_item.task_name, task_item.task_priority.to_string(), task_deadline.to_string()]
+                                        )
+                                    }
+                                },
+                                "today" => {
+                                    if task_deadline == TimeStamp::new().to_naivedate() {
+                                        display_table.push(
+                                            vec![task_id.clone(), task_item.task_name, task_item.task_priority.to_string(), task_deadline.to_string()]
+                                        )
+                                    }
+                                },
+                                "tomorrow" => {
+                                    if task_deadline == TimeStamp::new().to_naivedate().checked_add_days(Days::new(1)).unwrap() {
+                                        display_table.push(
+                                            vec![task_id.clone(), task_item.task_name, task_item.task_priority.to_string(), task_deadline.to_string()]
+                                        )
+                                    }
+                                },
+                                "after-tomorrow" => {
+                                    if task_deadline > TimeStamp::new().to_naivedate().checked_add_days(Days::new(1)).unwrap() {
+                                        display_table.push(
+                                            vec![task_id.clone(), task_item.task_name, task_item.task_priority.to_string(), task_deadline.to_string()]
+                                        )
+                                    }
+                                },
+                                _ => return Err(AppError::InvalidDeadlineKeyword (
+                                    format!("{} \nPlease select from following options: \n1) past-deadline 2) today 3) tomorrow 4) after-tomorrow 5) no-deadline\n", keyword)))
+                            }
+                        }
+                    }
+                }
+            }
+
+            let display_table: TableDisplay = display_table.table()
+                .title(vec![
+                    "Task ID".cell().bold(true),
+                    "Task Name".cell().bold(true),
+                    "Priority".cell().bold(true),
+                    "Deadline".cell().bold(true),
+                ])
+                .display().unwrap();
+            
+            println!("{}", display_table);
+        }
+
+        Ok(())
+    }
+
+    pub fn filter_priority(&self, keyword: &str) -> Result<(), AppError> {
+        for swimlane in vec![TaskStatus::ToDo, TaskStatus::InProgress, TaskStatus::Blocked, TaskStatus::InReview] {
+            let tasks: &Vec<String> = self.boards.get(&swimlane).unwrap();
+            println!("====================");
+            println!("{:#?}", swimlane.to_string());
+            println!("====================");
+
+            let mut display_table: Vec<Vec<String>> = Vec::new();
+            for task_id in tasks {
+                if TaskItem::check_if_file_exists(task_id).unwrap() == true {
+                    let task_item: TaskItem = TaskItem::get_task(task_id).unwrap();
+                    let task_deadline: String = match task_item.task_deadline {
+                        Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
+                        None => "None".to_string()
+                    };
+
+                    match keyword {
+                        "high" => {
+                            if task_item.task_priority == TaskPriority::High {
+                                display_table.push(
+                                    vec![task_id.clone(), task_item.task_name, task_item.task_priority.to_string(), task_deadline.to_string()]
+                                )
+                            }
+                        },
+                        "medium" => {
+                            if task_item.task_priority == TaskPriority::Medium {
+                                display_table.push(
+                                    vec![task_id.clone(), task_item.task_name, task_item.task_priority.to_string(), task_deadline.to_string()]
+                                )
+                            }
+                        },
+                        "low" => {
+                            if task_item.task_priority == TaskPriority::Low {
+                                display_table.push(
+                                    vec![task_id.clone(), task_item.task_name, task_item.task_priority.to_string(), task_deadline.to_string()]
+                                )
+                            }
+                        },
+                        _ => return Err(AppError::InvalidPriorityKeyword (
+                            format!("{} \nPlease select from following options: \n1) high 2) medium 3) low\n", keyword)))
+                    }
+                }
+            }
+
+            let display_table: TableDisplay = display_table.table()
+                .title(vec![
+                    "Task ID".cell().bold(true),
+                    "Task Name".cell().bold(true),
+                    "Priority".cell().bold(true),
+                    "Deadline".cell().bold(true),
+                ])
+                .display().unwrap();
             
             println!("{}", display_table);
         }
@@ -225,6 +414,30 @@ impl KanbanBoard {
         tasks_list.push(task_id);
         self.boards.insert(swimlane, tasks_list);
         self.write_to_file().unwrap();
+    }
+
+    pub fn update_board(&mut self, task_id: String, current_swimlane: TaskStatus, new_swimlane: &str) -> Result<(), AppError> {
+        let new_swimlane: TaskStatus = match new_swimlane {
+            "to-do" => TaskStatus::ToDo,
+            "in-progress" => TaskStatus::InProgress,
+            "blocked" => TaskStatus::Blocked,
+            "in-review" => TaskStatus::InReview,
+            "done" => TaskStatus::Done,
+            _ => return Err(AppError::InvalidSwimlanePassed(
+                format!("{} \nPlease select from following options: \n1) to-do 2) in-progress 3) blocked 4) in-review 5) done\n", new_swimlane.to_string())))
+        };
+        
+        let mut tasks_list: Vec<String> = self.boards.get(&current_swimlane).unwrap().to_vec();
+        let index = tasks_list.iter().position(|x| *x == task_id).unwrap();
+        tasks_list.remove(index);
+        self.boards.insert(current_swimlane, tasks_list);
+
+        let mut tasks_list: Vec<String> = self.boards.get(&new_swimlane).unwrap().to_vec();
+        tasks_list.push(task_id);
+        self.boards.insert(new_swimlane, tasks_list);
+        self.write_to_file().unwrap();
+
+        Ok(())
     }
 
     pub fn load_from_file() -> Result<Self, AppError> {

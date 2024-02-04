@@ -37,8 +37,8 @@ fn main() {
 
         match input_parts.as_slice() {
             ["add", "task"] => {
-                let task_name: String = text_input_prompt("Task Name:").unwrap();
-                let task_description: String = text_input_prompt("Task Description:").unwrap();
+                let task_name: String = text_input_prompt("Task Name:", None).unwrap();
+                let task_description: String = text_input_prompt("Task Description:", None).unwrap();
                 let task_priority: TaskPriority = select_prompt("Task Priority:").unwrap();
                 let deadline_check: bool = confirm_prompt(
                     "Is there a deadline for this task?", 
@@ -57,17 +57,70 @@ fn main() {
                 task_item.write_to_file().unwrap();
                 boards.add_to_board(task_item.task_id, task_item.task_status);
             },
+            ["edit", "task", task_id] => {
+                let mut task_item: TaskItem = TaskItem::get_task(&task_id.to_string()).unwrap();
+                let task_description: String = text_input_prompt("Task Description:", Some(&task_item.task_description[..])).unwrap();
+                let task_priority: TaskPriority = select_prompt("Task Priority:").unwrap();
+
+                let deadline_check: bool = match task_item.task_deadline {
+                    Some(_) => {
+                        confirm_prompt(
+                            "Do you want to change the deadline for this task?", 
+                            Some("It's recommended to set a deadline to track for completion.")
+                        ).unwrap()
+                    },
+                    None => {
+                        confirm_prompt(
+                            "Is there a deadline for this task?", 
+                            Some("It's recommended to set a deadline to track for completion.")
+                        ).unwrap()
+                    }
+                };
+
+                let task_deadline: Option<TimeStamp> = match deadline_check {
+                    true => {
+                        let input_deadline: NaiveDate = date_input_prompt("Task Deadline:").unwrap();                        
+                        Some(TimeStamp::convert(input_deadline))
+                    },
+                    false => None
+                };
+
+                task_item.task_description = task_description;
+                task_item.task_priority = task_priority;
+                task_item.task_deadline = task_deadline;
+                task_item.write_to_file().unwrap();
+            },
+            ["move", "task", task_id, swimlane] => {
+                let task_item: TaskItem = TaskItem::get_task(&task_id.to_string()).unwrap();
+                match boards.update_board(task_id.to_string(), task_item.task_status, swimlane) {
+                    Ok(_) => {},
+                    Err(e) => println!("{}", e)
+                };
+
+                TaskItem::change_swimlane(&task_id.to_string(), swimlane).unwrap();
+            },
             ["open", "task", task_id] => {
                 match TaskItem::check_if_file_exists(&task_id.to_string()).unwrap() {
                     true => {
-                        let task_item: TaskItem = TaskItem::get_task(&task_id.to_string()).unwrap();
-                        println!("{:#?}\n", task_item);
+                        TaskItem::show_task(&task_id.to_string());
                     },
                     false => println!("{}\n", AppError::TaskNotFound(task_id.to_string()))
                 }
             },
             ["show", swimlane] => {
                 match boards.show(swimlane) {
+                    Ok(_) => {},
+                    Err(e) => println!("{}", e)
+                };
+            },
+            ["filter", "due", keyword] => {
+                match boards.filter_deadline(keyword) {
+                    Ok(_) => {},
+                    Err(e) => println!("{}", e)
+                };
+            },
+            ["filter", "priority", keyword] => {
+                match boards.filter_priority(keyword) {
                     Ok(_) => {},
                     Err(e) => println!("{}", e)
                 };

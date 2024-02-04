@@ -11,10 +11,20 @@ use inquire::{
     validator::Validation
 };
 
-pub fn text_input_prompt(message: &str) -> Result<String, AppError> {
-    let input = match Text::new(message).prompt() {
-        Ok(s) => s,
-        Err(e) => return Err(AppError::TextInputPromptError(e.to_string()))
+pub fn text_input_prompt(message: &str, default: Option<&str>) -> Result<String, AppError> {
+    let input: String = match default {
+        Some(s) => {
+            match Text::new(message).with_default(s).prompt() {
+                Ok(s) => s,
+                Err(e) => return Err(AppError::TextInputPromptError(e.to_string()))
+            }
+        },
+        None => {
+            match Text::new(message).prompt() {
+                Ok(s) => s,
+                Err(e) => return Err(AppError::TextInputPromptError(e.to_string()))
+            }
+        }
     };
     Ok(input)
 }
