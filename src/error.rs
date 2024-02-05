@@ -1,9 +1,11 @@
+//! Defines the custom error types for the application
+
+/// Custom error types for the application
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum AppError {
     TextInputPromptError(String),
     ConfirmPromptError(String),
-    DateInputPromptError(String),
     SelectPromptError(String),
     HomeDirectoryInaccessibleError(String),
     HomeDirectoryPermissionError(String),
@@ -28,7 +30,6 @@ impl std::fmt::Display for AppError {
         match self {
             AppError::TextInputPromptError(err) => write!(f, "[TextInputPromptError] {}", err),
             AppError::ConfirmPromptError(err) => write!(f, "[ConfirmPromptError] {}", err),
-            AppError::DateInputPromptError(err) => write!(f, "[DateInputPromptError] {}", err),
             AppError::SelectPromptError(err) => write!(f, "[SelectPromptError] {}", err),
             AppError::HomeDirectoryInaccessibleError(err) => {
                 write!(f, "[HomeDirectoryInaccessibleError] {}", err)

@@ -1,3 +1,5 @@
+//! Defines the structure for a task item along with associated helper methods
+
 use crate::{
     constants::{ACTIVE_TASKS_PATH, DIGITS_IN_TASK_ID},
     error::AppError,
@@ -9,20 +11,39 @@ use cli_table::{Table, TableDisplay};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
+/// Rust structure for a task item
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TaskItem {
+    /// Task ID
     pub task_id: String,
+
+    /// Task Name
     pub task_name: String,
+
+    /// Description for the task
     pub task_description: String,
+
+    /// Date when task got created
     pub task_added_on: TimeStamp,
+
+    /// Date when work started on the task
     pub task_started_on: Option<TimeStamp>,
+
+    /// Date when task is supposed to finish
     pub task_deadline: Option<TimeStamp>,
+
+    /// Date when task got completed
     pub task_completed_on: Option<TimeStamp>,
+    
+    /// Status of the task
     pub task_status: TaskStatus,
+
+    /// Priority of the task
     pub task_priority: TaskPriority,
 }
 
 impl TaskItem {
+    /// Create new task item
     pub fn new(
         task_name: String,
         task_description: String,
@@ -54,6 +75,7 @@ impl TaskItem {
         Ok(task_item)
     }
 
+    /// Fetch task information for given Task ID
     pub fn get_task(task_id: &String) -> Result<Self, AppError> {
         let app_dir: String = create_app_dirs()?;
         let file_path: String = format!("{}\\{}\\{}.bin", app_dir, ACTIVE_TASKS_PATH, task_id);
@@ -74,6 +96,7 @@ impl TaskItem {
         Ok(task_item)
     }
 
+    /// Show all information for given Task ID
     pub fn show_task(task_id: &String) -> Result<TableDisplay, AppError> {
         let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file()?;
         let task_item: TaskItem = TaskItem::get_task(&task_id.to_string())?;
@@ -127,6 +150,7 @@ impl TaskItem {
         Ok(display_table)
     }
 
+    /// Move given Task ID from one swimlane to another in Kanban Board
     pub fn change_swimlane(task_id: &String, swimlane: &str) -> Result<(), AppError> {
         let new_swimlane: TaskStatus = match swimlane {
             "to-do" => TaskStatus::ToDo,
@@ -153,6 +177,7 @@ impl TaskItem {
         Ok(())
     }
 
+    /// Delete a given Task ID
     pub fn delete_task(task_id: &String) -> Result<(), AppError> {
         let app_dir: String = create_app_dirs()?;
         let file_path: String = format!("{}\\{}\\{}.bin", app_dir, ACTIVE_TASKS_PATH, task_id);
@@ -169,6 +194,7 @@ impl TaskItem {
         Ok(())
     }
 
+    /// Store the task information to a file in disk
     pub fn write_to_file(&self) -> Result<(), AppError> {
         let app_dir: String = create_app_dirs()?;
         let file_path: String = format!("{}\\{}\\{}.bin", app_dir, ACTIVE_TASKS_PATH, self.task_id);
@@ -189,6 +215,7 @@ impl TaskItem {
         Ok(())
     }
 
+    /// Check if the task information file is present in disk for given Task ID
     pub fn check_if_file_exists(task_id: &String) -> Result<bool, AppError> {
         let app_dir: String = create_app_dirs()?;
         let file_path: String = format!("{}\\{}\\{}.bin", app_dir, ACTIVE_TASKS_PATH, task_id);

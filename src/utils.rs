@@ -1,4 +1,4 @@
-use std::fmt::format;
+//! Utilities module defining the helper Rust structures and methods for use across other modules
 
 use crate::{
     constants::{ACTIVE_SUBTASKS_PATH, ACTIVE_TASKS_PATH, APP_DIR_PATH},
@@ -7,6 +7,7 @@ use crate::{
 use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 
+/// Rust structure for datetime
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct TimeStamp {
     year: i32,
@@ -15,6 +16,7 @@ pub struct TimeStamp {
 }
 
 impl TimeStamp {
+    /// Get current datetime
     pub fn new() -> Self {
         let current_datetime: DateTime<Local> = Local::now();
         TimeStamp {
@@ -24,6 +26,7 @@ impl TimeStamp {
         }
     }
 
+    /// Convert given input chrono NaiveDate to TimeStamp structure
     pub fn convert(input_date: NaiveDate) -> Self {
         TimeStamp {
             year: input_date.year(),
@@ -32,6 +35,7 @@ impl TimeStamp {
         }
     }
 
+    /// Convert given input datetime to chrono NaiveDate
     pub fn to_naivedate(self) -> Result<NaiveDate, AppError> {
         let date = match NaiveDate::from_ymd_opt(self.year, self.month, self.day) {
             Some(s) => s,
@@ -41,6 +45,7 @@ impl TimeStamp {
     }
 }
 
+/// Possible task priority values for use in Kanban Board
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum TaskPriority {
     High,
@@ -58,6 +63,7 @@ impl std::fmt::Display for TaskPriority {
     }
 }
 
+/// Possible task status or swimlane values for use in Kanban Board
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub enum TaskStatus {
     ToDo,
@@ -79,6 +85,7 @@ impl std::fmt::Display for TaskStatus {
     }
 }
 
+/// Get users' home directory on Windows OS-based machine
 fn get_users_home_dir() -> Result<String, AppError> {
     match home::home_dir() {
         Some(path) => return Ok(path.display().to_string()),
@@ -90,39 +97,30 @@ fn get_users_home_dir() -> Result<String, AppError> {
     }
 }
 
+/// Create new directory based on given path
+fn create_dir(dir_path: &String) -> Result<(), AppError> {
+    match std::fs::create_dir_all(&dir_path) {
+        Ok(_) => return Ok(()),
+        Err(e) => {
+            return Err(AppError::HomeDirectoryPermissionError(format!(
+                "{} - {}",
+                dir_path,
+                e.to_string()
+            )))
+        }
+    }
+}
+
+/// Create all application directories for storing app information
 pub fn create_app_dirs() -> Result<String, AppError> {
     let home_dir: String = get_users_home_dir()?;
     let app_dir_path: String = format!("{}\\{}", home_dir, APP_DIR_PATH);
+    let tasks_path: String = format!("{}\\{}", &app_dir_path, ACTIVE_TASKS_PATH);
+    let subtasks_path: String = format!("{}\\{}", &app_dir_path, ACTIVE_SUBTASKS_PATH);
 
-    match std::fs::create_dir_all(&app_dir_path) {
-        Ok(_) => {}
-        Err(e) => {
-            return Err(AppError::HomeDirectoryPermissionError(format!(
-                "{} - {}",
-                app_dir_path,
-                e.to_string()
-            )))
-        }
-    };
-    match std::fs::create_dir_all(format!("{}\\{}", app_dir_path, ACTIVE_TASKS_PATH)) {
-        Ok(_) => {}
-        Err(e) => {
-            return Err(AppError::HomeDirectoryPermissionError(format!(
-                "{} - {}",
-                ACTIVE_TASKS_PATH,
-                e.to_string()
-            )))
-        }
-    };
-    match std::fs::create_dir_all(format!("{}\\{}", app_dir_path, ACTIVE_SUBTASKS_PATH)) {
-        Ok(_) => {}
-        Err(e) => {
-            return Err(AppError::HomeDirectoryPermissionError(format!(
-                "{} - {}",
-                ACTIVE_SUBTASKS_PATH,
-                e.to_string()
-            )))
-        }
-    };
+    create_dir(&app_dir_path)?;
+    create_dir(&tasks_path)?;
+    create_dir(&subtasks_path)?;
+
     Ok(app_dir_path)
 }

@@ -1,25 +1,33 @@
+//! Defines the Kanban Board structure along with associated helper methods
+
 use crate::{
     constants::KANBAN_BOARD_FILE, error::AppError, links::TaskToSubtaskMap, subtasks::SubTaskItem,
     tasks::TaskItem, utils::create_app_dirs, TaskPriority, TaskStatus, TimeStamp,
 };
 use chrono::{prelude::*, Days};
-use cli_table::{Cell, Style, Table, TableDisplay};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::Path};
+use cli_table::{Cell, Style, Table, TableDisplay};
 
+/// Rust structure for Kanban Board
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct KanbanBoard {
+    /// Using HashMaps to store list of Task and SubTask IDs in different swimlanes
     boards: HashMap<TaskStatus, Vec<String>>,
 }
 
 impl KanbanBoard {
+    /// Create new blank Kanban Board (for first time setup)
     pub fn new() -> Self {
         KanbanBoard {
             boards: HashMap::new(),
         }
     }
 
+    /// Display all tasks in given swimlane (to-do, in-progress, blocked, in-review, done).
+    /// If swimlane = "all", then tasks in all swimlanes in the Kanban Board are displayed.
     pub fn show_tasks(&self, swimlanes: &str) -> Result<(), AppError> {
+        let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file()?;
         let swimlane_to_show: Vec<TaskStatus> = match swimlanes {
             "all" => vec![TaskStatus::ToDo, TaskStatus::InProgress, TaskStatus::Blocked, TaskStatus::InReview, TaskStatus::Done],
             "to-do" => vec![TaskStatus::ToDo],
@@ -30,8 +38,6 @@ impl KanbanBoard {
             _ => return Err(AppError::InvalidSwimlanePassed(
                 format!("{} \nPlease select from following options: \n1) all 2) to-do 3) in-progress 4) blocked 5) in-review 6) done\n", swimlanes.to_string())))
         };
-
-        let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file()?;
 
         for swimlane in swimlane_to_show {
             let tasks: &Vec<String> = match self.boards.get(&swimlane) {
@@ -81,6 +87,8 @@ impl KanbanBoard {
         Ok(())
     }
 
+    /// Display all subtasks in given swimlane (to-do, in-progress, blocked, in-review, done).
+    /// If swimlane = "all", then subtasks in all swimlanes in the Kanban Board are displayed.
     pub fn show_subtasks(&self, swimlanes: &str) -> Result<(), AppError> {
         let swimlane_to_show: Vec<TaskStatus> = match swimlanes {
             "all" => vec![TaskStatus::ToDo, TaskStatus::InProgress, TaskStatus::Blocked, TaskStatus::InReview, TaskStatus::Done],
@@ -146,6 +154,13 @@ impl KanbanBoard {
         Ok(())
     }
 
+    /// Filter and display the tasks and subtasks based on deadline keyword provided.
+    /// 
+    /// - `no-deadline`: Shows all tasks and subtasks which don't have a deadline defined.
+    /// - `past-deadline`: Shows all tasks and subtasks which are past their set deadline.
+    /// - `today`: Shows all tasks and subtasks which have today's date as deadline.
+    /// - `tomorrow`: Shows all tasks and subtasks which have tomorrow's date as  deadline.
+    /// - `after-tomorrow`: Shows all tasks and subtasks whose deadlines are upcoming after tomorrow.
     pub fn filter_deadline(&self, keyword: &str) -> Result<(), AppError> {
         for swimlane in vec![
             TaskStatus::ToDo,
@@ -296,6 +311,11 @@ impl KanbanBoard {
         Ok(())
     }
 
+    /// Filter and display the tasks and subtasks based on priority keyword provided.
+    /// 
+    /// - `high`: Shows all high priority tasks and subtasks.
+    /// - `medium`: Shows all medium priority tasks and subtasks.
+    /// - `low`: Shows all low priority tasks and subtasks.
     pub fn filter_priority(&self, keyword: &str) -> Result<(), AppError> {
         for swimlane in vec![
             TaskStatus::ToDo,
@@ -408,6 +428,7 @@ impl KanbanBoard {
         Ok(())
     }
 
+    /// Fetch all non-completed tasks and subtasks which are in "to-do", "in-progress", "blocked", and "in-review" swimlanes
     pub fn get_tasks_list(&self) -> Result<Vec<String>, AppError> {
         let mut tasks_list: Vec<String> = Vec::new();
         for swimlane in vec![
@@ -429,6 +450,7 @@ impl KanbanBoard {
         Ok(tasks_list)
     }
 
+    /// Add a given Task or SubTask ID to specific swimlane in the Kanban Board
     pub fn add_to_board(&mut self, task_id: String, swimlane: TaskStatus) -> Result<(), AppError> {
         let mut tasks_list: Vec<String> = match self.boards.get(&swimlane) {
             Some(s) => s.to_vec(),
@@ -440,6 +462,7 @@ impl KanbanBoard {
         Ok(())
     }
 
+    /// Move a given Task or SubTask ID to different swimlanes in the Kanban Board
     pub fn update_board(
         &mut self,
         task_id: String,
@@ -478,6 +501,7 @@ impl KanbanBoard {
         Ok(())
     }
 
+    /// Delete a given Task or SubTask ID in a specified swimlane in the Kanban Board
     pub fn delete_task(&mut self, task_id: String, swimlane: TaskStatus) -> Result<(), AppError> {
         let mut tasks_list: Vec<String> = match self.boards.get(&swimlane) {
             Some(s) => s.to_vec(),
@@ -494,6 +518,7 @@ impl KanbanBoard {
         Ok(())
     }
 
+    /// Load the Kanban Board from stored file in disk
     pub fn load_from_file() -> Result<Self, AppError> {
         let app_dir: String = create_app_dirs()?;
         let data: Vec<u8> = match std::fs::read(format!("{}\\{}", app_dir, KANBAN_BOARD_FILE)) {
@@ -513,6 +538,7 @@ impl KanbanBoard {
         Ok(boards)
     }
 
+    /// Store the Kanban Board information to a file in disk
     pub fn write_to_file(&self) -> Result<(), AppError> {
         let app_dir: String = create_app_dirs()?;
         let data: Vec<u8> = match bincode::serialize(&self) {
@@ -532,6 +558,7 @@ impl KanbanBoard {
         Ok(())
     }
 
+    /// Check if the Kanban Board file is present in disk
     pub fn check_if_file_exists() -> Result<bool, AppError> {
         let app_dir: String = create_app_dirs()?;
         let boards_file: String = format!("{}\\{}", app_dir, KANBAN_BOARD_FILE);

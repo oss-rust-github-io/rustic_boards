@@ -1,3 +1,5 @@
+//! Defines the structure for a subtask item along with associated helper methods
+
 use crate::{
     constants::{ACTIVE_SUBTASKS_PATH, DIGITS_IN_TASK_ID},
     error::AppError,
@@ -9,20 +11,39 @@ use cli_table::{Table, TableDisplay};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
+/// Rust structure for a subtask item
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SubTaskItem {
+    /// SubTask ID
     pub subtask_id: String,
+
+    /// SubTask Name
     pub subtask_name: String,
+
+    /// Description for the subtask
     pub subtask_description: String,
+
+    /// Date when subtask got created
     pub subtask_added_on: TimeStamp,
+
+    /// Date when work started on the subtask
     pub subtask_started_on: Option<TimeStamp>,
+
+    /// Date when subtask is supposed to finish
     pub subtask_deadline: Option<TimeStamp>,
+
+    /// Date when subtask got completed
     pub subtask_completed_on: Option<TimeStamp>,
+
+    /// Status of the subtask
     pub subtask_status: TaskStatus,
+
+    /// Priority of the subtask
     pub subtask_priority: TaskPriority,
 }
 
 impl SubTaskItem {
+    /// Create new subtask item
     pub fn new(
         subtask_name: String,
         subtask_description: String,
@@ -54,6 +75,7 @@ impl SubTaskItem {
         Ok(task_item)
     }
 
+    /// Fetch subtask information for given SubTask ID
     pub fn get_task(subtask_id: &String) -> Result<Self, AppError> {
         let app_dir: String = create_app_dirs()?;
         let file_path: String =
@@ -75,6 +97,7 @@ impl SubTaskItem {
         Ok(task_item)
     }
 
+    /// Show all information for given SubTask ID
     pub fn show_task(subtask_id: &String) -> Result<TableDisplay, AppError> {
         let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file()?;
         let subtask_item: SubTaskItem = SubTaskItem::get_task(&subtask_id.to_string())?;
@@ -129,6 +152,7 @@ impl SubTaskItem {
         Ok(display_table)
     }
 
+    /// Move given SubTask ID from one swimlane to another in Kanban Board
     pub fn change_swimlane(subtask_id: &String, swimlane: &str) -> Result<(), AppError> {
         let new_swimlane: TaskStatus = match swimlane {
             "to-do" => TaskStatus::ToDo,
@@ -155,6 +179,7 @@ impl SubTaskItem {
         Ok(())
     }
 
+    /// Delete a given SubTask ID
     pub fn delete_task(subtask_id: &String) -> Result<(), AppError> {
         let app_dir: String = create_app_dirs()?;
         let file_path: String =
@@ -172,6 +197,7 @@ impl SubTaskItem {
         Ok(())
     }
 
+    /// Store the subtask information to a file in disk
     pub fn write_to_file(&self) -> Result<(), AppError> {
         let app_dir: String = create_app_dirs()?;
         let file_path: String = format!(
@@ -195,6 +221,7 @@ impl SubTaskItem {
         Ok(())
     }
 
+    /// Check if the subtask information file is present in disk for given SubTask ID
     pub fn check_if_file_exists(task_id: &String) -> Result<bool, AppError> {
         let app_dir: String = create_app_dirs()?;
         let file_path: String = format!("{}\\{}\\{}.bin", app_dir, ACTIVE_SUBTASKS_PATH, task_id);
