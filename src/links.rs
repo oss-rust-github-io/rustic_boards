@@ -19,6 +19,7 @@ impl TaskToSubtaskMap {
         for (task_id, subtasks_list) in &self.tasks {
             if subtasks_list.contains(&subtask_id) {
                 parent_task_id = Some(task_id.clone());
+                break;
             }
         }
         parent_task_id
@@ -40,14 +41,16 @@ impl TaskToSubtaskMap {
         num_subtasks
     }
 
-    pub fn delete_task(&mut self, task_id: &String) {
+    pub fn delete_task(&mut self, task_id: &String) -> Result<(), AppError> {
         self.tasks.remove(task_id);
-        self.write_to_file().unwrap();
+        self.write_to_file()?;
+        Ok(())
     }
 
-    pub fn delete_subtask(&mut self, subtask_id: String) {
+    pub fn delete_subtask(&mut self, subtask_id: String) -> Result<(), AppError> {
         let mut parent_task_id: String = String::new();
         let mut updated_subtasks_list: Vec<String> = Vec::new();
+        
         for (task_id, subtasks_list) in &self.tasks {
             if subtasks_list.contains(&subtask_id) {
                 parent_task_id = task_id.to_string();
@@ -56,23 +59,28 @@ impl TaskToSubtaskMap {
             }
         }
 
-        let index: usize = updated_subtasks_list
+        match updated_subtasks_list
             .iter()
-            .position(|x| *x == subtask_id)
-            .unwrap();
-        updated_subtasks_list.remove(index);
-        self.tasks.insert(parent_task_id, updated_subtasks_list);
-        self.write_to_file().unwrap();
+            .position(|x| *x == subtask_id) {
+                Some(s) => {
+                    updated_subtasks_list.remove(s);
+                    self.tasks.insert(parent_task_id, updated_subtasks_list);
+                    self.write_to_file()?;
+                    return Ok(())
+                },
+                None => Ok(())
+            }
     }
 
-    pub fn add_new_link(&mut self, task_id: String, subtask_list: &Vec<String>) {
+    pub fn add_new_link(&mut self, task_id: String, subtask_list: &Vec<String>) -> Result<(), AppError> {
         let mut current_subtasks_list: Vec<String> = match self.tasks.get(&task_id) {
             Some(s) => s.to_vec(),
             None => Vec::new(),
         };
         current_subtasks_list.extend(subtask_list.clone());
         self.tasks.insert(task_id, current_subtasks_list);
-        self.write_to_file().unwrap();
+        self.write_to_file()?;
+        Ok(())
     }
 
     pub fn update_link(
@@ -85,18 +93,22 @@ impl TaskToSubtaskMap {
             Some(s) => s.to_vec(),
             None => return Err(AppError::TaskNotFound(current_task_id)),
         };
-        let index: usize = subtasks_list.iter().position(|x| *x == subtask_id).unwrap();
-        subtasks_list.remove(index);
-        self.tasks.insert(current_task_id, subtasks_list);
+        
+        match subtasks_list.iter().position(|x| *x == subtask_id) {
+            Some(s) => {
+                subtasks_list.remove(s);
+                self.tasks.insert(current_task_id, subtasks_list);
+            },
+            None => {}
+        };
 
         let mut subtasks_list: Vec<String> = match self.tasks.get(&new_task_id) {
             Some(s) => s.to_vec(),
             None => return Err(AppError::TaskNotFound(new_task_id)),
         };
-        subtasks_list.push(new_task_id.clone());
+        subtasks_list.push(subtask_id);
         self.tasks.insert(new_task_id, subtasks_list);
-        self.write_to_file().unwrap();
-
+        self.write_to_file()?;
         Ok(())
     }
 

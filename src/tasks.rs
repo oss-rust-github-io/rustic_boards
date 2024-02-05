@@ -74,29 +74,29 @@ impl TaskItem {
         Ok(task_item)
     }
 
-    pub fn show_task(task_id: &String) {
-        let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file().unwrap();
-        let task_item: TaskItem = TaskItem::get_task(&task_id.to_string()).unwrap();
+    pub fn show_task(task_id: &String) -> Result<TableDisplay, AppError> {
+        let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file()?;
+        let task_item: TaskItem = TaskItem::get_task(&task_id.to_string())?;
         let task_added_on: String = task_item
             .task_added_on
-            .to_naivedate()
+            .to_naivedate()?
             .format("%b %e, %Y")
             .to_string();
         let task_started_on: String = match task_item.task_started_on {
-            Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
+            Some(s) => s.to_naivedate()?.format("%b %e, %Y").to_string(),
             None => "None".to_string(),
         };
         let task_deadline: String = match task_item.task_deadline {
-            Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
+            Some(s) => s.to_naivedate()?.format("%b %e, %Y").to_string(),
             None => "None".to_string(),
         };
         let task_completed_on: String = match task_item.task_completed_on {
-            Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
+            Some(s) => s.to_naivedate()?.format("%b %e, %Y").to_string(),
             None => "None".to_string(),
         };
         let subtasks_list: Vec<String> = tasks_link.get_subtasks_list(task_id);
 
-        let display_table: TableDisplay = vec![
+        let display_vec: Vec<Vec<String>> = vec![
             vec!["Task ID".to_string(), task_item.task_id],
             vec!["Task Name".to_string(), task_item.task_name],
             vec!["Task Description".to_string(), task_item.task_description],
@@ -117,12 +117,14 @@ impl TaskItem {
                     .collect::<Vec<_>>()
                     .join(", "),
             ],
-        ]
-        .table()
-        .display()
-        .unwrap();
+        ];
 
-        println!("{}", display_table);
+        let display_table: TableDisplay = match display_vec.table().display() {
+            Ok(s) => s,
+            Err(e) => return Err(AppError::TableDisplayParseError(e.to_string()))
+        };
+
+        Ok(display_table)
     }
 
     pub fn change_swimlane(task_id: &String, swimlane: &str) -> Result<(), AppError> {
@@ -136,7 +138,7 @@ impl TaskItem {
                 format!("{} \nPlease select from following options: \n1) to-do 2) in-progress 3) blocked 4) in-review 5) done\n", swimlane.to_string())))
         };
 
-        let mut task_item: TaskItem = TaskItem::get_task(&task_id.to_string()).unwrap();
+        let mut task_item: TaskItem = TaskItem::get_task(&task_id.to_string())?;
 
         if (task_item.task_status == TaskStatus::ToDo) && (new_swimlane != TaskStatus::ToDo) {
             task_item.task_started_on = Some(TimeStamp::new());
@@ -147,7 +149,7 @@ impl TaskItem {
         }
 
         task_item.task_status = new_swimlane;
-        task_item.write_to_file().unwrap();
+        task_item.write_to_file()?;
         Ok(())
     }
 

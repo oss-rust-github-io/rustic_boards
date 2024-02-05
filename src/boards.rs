@@ -31,20 +31,23 @@ impl KanbanBoard {
                 format!("{} \nPlease select from following options: \n1) all 2) to-do 3) in-progress 4) blocked 5) in-review 6) done\n", swimlanes.to_string())))
         };
 
-        let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file().unwrap();
+        let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file()?;
 
         for swimlane in swimlane_to_show {
-            let tasks: &Vec<String> = self.boards.get(&swimlane).unwrap();
+            let tasks: &Vec<String> = match self.boards.get(&swimlane) {
+                Some(s) => s,
+                None => return Err(AppError::SwimlaneNotFoundError(format!("Swimlane {} not found.", swimlane)))
+            };
             println!("====================");
             println!("{:#?}", swimlane.to_string());
             println!("====================");
 
             let mut display_table: Vec<Vec<String>> = Vec::new();
             for task_id in tasks {
-                if TaskItem::check_if_file_exists(task_id).unwrap() == true {
-                    let task_item: TaskItem = TaskItem::get_task(task_id).unwrap();
+                if TaskItem::check_if_file_exists(task_id)? == true {
+                    let task_item: TaskItem = TaskItem::get_task(task_id)?;
                     let task_deadline: String = match task_item.task_deadline {
-                        Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
+                        Some(s) => s.to_naivedate()?.format("%b %e, %Y").to_string(),
                         None => "None".to_string(),
                     };
                     let num_subtasks: String = tasks_link.get_num_subtasks(task_id).to_string();
@@ -58,7 +61,7 @@ impl KanbanBoard {
                 }
             }
 
-            let display_table: TableDisplay = display_table
+            let display_table: TableDisplay = match display_table
                 .table()
                 .title(vec![
                     "Task ID".cell().bold(true),
@@ -67,8 +70,10 @@ impl KanbanBoard {
                     "Deadline".cell().bold(true),
                     "Subtasks".cell().bold(true),
                 ])
-                .display()
-                .unwrap();
+                .display() {
+                    Ok(s) => s,
+                    Err(e) => return Err(AppError::TableDisplayParseError(e.to_string()))
+                };
 
             println!("{}", display_table);
         }
@@ -88,20 +93,23 @@ impl KanbanBoard {
                 format!("{} \nPlease select from following options: \n1) all 2) to-do 3) in-progress 4) blocked 5) in-review 6) done\n", swimlanes.to_string())))
         };
 
-        let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file().unwrap();
+        let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file()?;
 
         for swimlane in swimlane_to_show {
-            let tasks: &Vec<String> = self.boards.get(&swimlane).unwrap();
+            let tasks: &Vec<String> = match self.boards.get(&swimlane) {
+                Some(s) => s,
+                None => return Err(AppError::SwimlaneNotFoundError(format!("Swimlane {} not found.", swimlane)))
+            };
             println!("====================");
             println!("{:#?}", swimlane.to_string());
             println!("====================");
 
             let mut display_table: Vec<Vec<String>> = Vec::new();
             for subtask_id in tasks {
-                if SubTaskItem::check_if_file_exists(subtask_id).unwrap() == true {
-                    let subtask_item: SubTaskItem = SubTaskItem::get_task(subtask_id).unwrap();
+                if SubTaskItem::check_if_file_exists(subtask_id)? == true {
+                    let subtask_item: SubTaskItem = SubTaskItem::get_task(subtask_id)?;
                     let subtask_deadline: String = match subtask_item.subtask_deadline {
-                        Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
+                        Some(s) => s.to_naivedate()?.format("%b %e, %Y").to_string(),
                         None => "None".to_string(),
                     };
                     let task_id: String = match tasks_link.get_task_id(subtask_id) {
@@ -118,7 +126,7 @@ impl KanbanBoard {
                 }
             }
 
-            let display_table: TableDisplay = display_table
+            let display_table: TableDisplay = match display_table
                 .table()
                 .title(vec![
                     "Subtask ID".cell().bold(true),
@@ -127,8 +135,10 @@ impl KanbanBoard {
                     "Deadline".cell().bold(true),
                     "Parent Task".cell().bold(true),
                 ])
-                .display()
-                .unwrap();
+                .display() {
+                    Ok(s) => s,
+                    Err(e) => return Err(AppError::TableDisplayParseError(e.to_string()))
+                };
 
             println!("{}", display_table);
         }
@@ -143,16 +153,19 @@ impl KanbanBoard {
             TaskStatus::Blocked,
             TaskStatus::InReview,
         ] {
-            let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file().unwrap();
-            let tasks: &Vec<String> = self.boards.get(&swimlane).unwrap();
+            let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file()?;
+            let tasks: &Vec<String> = match self.boards.get(&swimlane) {
+                Some(s) => s,
+                None => return Err(AppError::SwimlaneNotFoundError(format!("Swimlane {} not found.", swimlane)))
+            };
             println!("====================");
             println!("{:#?}", swimlane.to_string());
             println!("====================");
 
             let mut display_table: Vec<Vec<String>> = Vec::new();
             for task_id in tasks {
-                if TaskItem::check_if_file_exists(task_id).unwrap() == true {
-                    let task_item: TaskItem = TaskItem::get_task(task_id).unwrap();
+                if TaskItem::check_if_file_exists(task_id)? == true {
+                    let task_item: TaskItem = TaskItem::get_task(task_id)?;
                     let num_subtasks: String = tasks_link.get_num_subtasks(task_id).to_string();
 
                     if keyword == "no-deadline" {
@@ -168,31 +181,31 @@ impl KanbanBoard {
                     } else {
                         if task_item.task_deadline != None {
                             let task_deadline: NaiveDate =
-                                task_item.task_deadline.unwrap().to_naivedate();
+                                task_item.task_deadline.unwrap().to_naivedate()?;
                             match keyword {
                                 "past-deadline" => {
-                                    if task_deadline < TimeStamp::new().to_naivedate() {
+                                    if task_deadline < TimeStamp::new().to_naivedate()? {
                                         display_table.push(
                                             vec![task_id.clone(), task_item.task_name, task_item.task_priority.to_string(), task_deadline.to_string(), num_subtasks]
                                         )
                                     }
                                 },
                                 "today" => {
-                                    if task_deadline == TimeStamp::new().to_naivedate() {
+                                    if task_deadline == TimeStamp::new().to_naivedate()? {
                                         display_table.push(
                                             vec![task_id.clone(), task_item.task_name, task_item.task_priority.to_string(), task_deadline.to_string(), num_subtasks]
                                         )
                                     }
                                 },
                                 "tomorrow" => {
-                                    if task_deadline == TimeStamp::new().to_naivedate().checked_add_days(Days::new(1)).unwrap() {
+                                    if task_deadline == TimeStamp::new().to_naivedate()?.checked_add_days(Days::new(1)).unwrap() {
                                         display_table.push(
                                             vec![task_id.clone(), task_item.task_name, task_item.task_priority.to_string(), task_deadline.to_string(), num_subtasks]
                                         )
                                     }
                                 },
                                 "after-tomorrow" => {
-                                    if task_deadline > TimeStamp::new().to_naivedate().checked_add_days(Days::new(1)).unwrap() {
+                                    if task_deadline > TimeStamp::new().to_naivedate()?.checked_add_days(Days::new(1)).unwrap() {
                                         display_table.push(
                                             vec![task_id.clone(), task_item.task_name, task_item.task_priority.to_string(), task_deadline.to_string(), num_subtasks]
                                         )
@@ -205,9 +218,12 @@ impl KanbanBoard {
                     }
                 }
 
-                if SubTaskItem::check_if_file_exists(task_id).unwrap() == true {
-                    let subtask_item: SubTaskItem = SubTaskItem::get_task(task_id).unwrap();
-                    let parent_task_id: String = tasks_link.get_task_id(task_id).unwrap();
+                if SubTaskItem::check_if_file_exists(task_id)? == true {
+                    let subtask_item: SubTaskItem = SubTaskItem::get_task(task_id)?;
+                    let parent_task_id: String = match tasks_link.get_task_id(task_id) {
+                        Some(s) => s,
+                        None => return Err(AppError::TaskNotFound(format!("Parent task not found for subtask {}", task_id)))
+                    };
 
                     if keyword == "no-deadline" {
                         if subtask_item.subtask_deadline == None {
@@ -222,31 +238,31 @@ impl KanbanBoard {
                     } else {
                         if subtask_item.subtask_deadline != None {
                             let subtask_deadline: NaiveDate =
-                                subtask_item.subtask_deadline.unwrap().to_naivedate();
+                                subtask_item.subtask_deadline.unwrap().to_naivedate()?;
                             match keyword {
                                 "past-deadline" => {
-                                    if subtask_deadline < TimeStamp::new().to_naivedate() {
+                                    if subtask_deadline < TimeStamp::new().to_naivedate()? {
                                         display_table.push(
                                             vec![task_id.clone(), subtask_item.subtask_name, subtask_item.subtask_priority.to_string(), subtask_deadline.to_string(), parent_task_id]
                                         )
                                     }
                                 },
                                 "today" => {
-                                    if subtask_deadline == TimeStamp::new().to_naivedate() {
+                                    if subtask_deadline == TimeStamp::new().to_naivedate()? {
                                         display_table.push(
                                             vec![task_id.clone(), subtask_item.subtask_name, subtask_item.subtask_priority.to_string(), subtask_deadline.to_string(), parent_task_id]
                                         )
                                     }
                                 },
                                 "tomorrow" => {
-                                    if subtask_deadline == TimeStamp::new().to_naivedate().checked_add_days(Days::new(1)).unwrap() {
+                                    if subtask_deadline == TimeStamp::new().to_naivedate()?.checked_add_days(Days::new(1)).unwrap() {
                                         display_table.push(
                                             vec![task_id.clone(), subtask_item.subtask_name, subtask_item.subtask_priority.to_string(), subtask_deadline.to_string(), parent_task_id]
                                         )
                                     }
                                 },
                                 "after-tomorrow" => {
-                                    if subtask_deadline > TimeStamp::new().to_naivedate().checked_add_days(Days::new(1)).unwrap() {
+                                    if subtask_deadline > TimeStamp::new().to_naivedate()?.checked_add_days(Days::new(1)).unwrap() {
                                         display_table.push(
                                             vec![task_id.clone(), subtask_item.subtask_name, subtask_item.subtask_priority.to_string(), subtask_deadline.to_string(), parent_task_id]
                                         )
@@ -260,7 +276,7 @@ impl KanbanBoard {
                 }
             }
 
-            let display_table: TableDisplay = display_table
+            let display_table: TableDisplay = match display_table
                 .table()
                 .title(vec![
                     "Task ID".cell().bold(true),
@@ -269,8 +285,10 @@ impl KanbanBoard {
                     "Deadline".cell().bold(true),
                     "Subtasks/Parent Task".cell().bold(true),
                 ])
-                .display()
-                .unwrap();
+                .display() {
+                    Ok(s) => s,
+                    Err(e) => return Err(AppError::TableDisplayParseError(e.to_string()))
+                };
 
             println!("{}", display_table);
         }
@@ -285,18 +303,21 @@ impl KanbanBoard {
             TaskStatus::Blocked,
             TaskStatus::InReview,
         ] {
-            let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file().unwrap();
-            let tasks: &Vec<String> = self.boards.get(&swimlane).unwrap();
+            let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file()?;
+            let tasks: &Vec<String> = match self.boards.get(&swimlane) {
+                Some(s) => s,
+                None => return Err(AppError::SwimlaneNotFoundError(format!("Swimlane {} not found.", swimlane)))
+            };
             println!("====================");
             println!("{:#?}", swimlane.to_string());
             println!("====================");
 
             let mut display_table: Vec<Vec<String>> = Vec::new();
             for task_id in tasks {
-                if TaskItem::check_if_file_exists(task_id).unwrap() == true {
-                    let task_item: TaskItem = TaskItem::get_task(task_id).unwrap();
+                if TaskItem::check_if_file_exists(task_id)? == true {
+                    let task_item: TaskItem = TaskItem::get_task(task_id)?;
                     let task_deadline: String = match task_item.task_deadline {
-                        Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
+                        Some(s) => s.to_naivedate()?.format("%b %e, %Y").to_string(),
                         None => "None".to_string(),
                     };
                     let num_subtasks: String = tasks_link.get_num_subtasks(task_id).to_string();
@@ -328,13 +349,16 @@ impl KanbanBoard {
                     }
                 }
 
-                if SubTaskItem::check_if_file_exists(task_id).unwrap() == true {
-                    let subtask_item: SubTaskItem = SubTaskItem::get_task(task_id).unwrap();
+                if SubTaskItem::check_if_file_exists(task_id)? == true {
+                    let subtask_item: SubTaskItem = SubTaskItem::get_task(task_id)?;
                     let subtask_deadline: String = match subtask_item.subtask_deadline {
-                        Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
+                        Some(s) => s.to_naivedate()?.format("%b %e, %Y").to_string(),
                         None => "None".to_string(),
                     };
-                    let parent_task_id: String = tasks_link.get_task_id(task_id).unwrap();
+                    let parent_task_id: String = match tasks_link.get_task_id(task_id) {
+                        Some(s) => s,
+                        None => return Err(AppError::TaskNotFound(format!("Parent task not found for subtask {}", task_id)))
+                    };
 
                     match keyword {
                         "high" => {
@@ -364,7 +388,7 @@ impl KanbanBoard {
                 }
             }
 
-            let display_table: TableDisplay = display_table
+            let display_table: TableDisplay = match display_table
                 .table()
                 .title(vec![
                     "Task ID".cell().bold(true),
@@ -373,8 +397,10 @@ impl KanbanBoard {
                     "Deadline".cell().bold(true),
                     "Subtasks/Parent Task".cell().bold(true),
                 ])
-                .display()
-                .unwrap();
+                .display() {
+                    Ok(s) => s,
+                    Err(e) => return Err(AppError::TableDisplayParseError(e.to_string()))
+                };
 
             println!("{}", display_table);
         }
@@ -382,7 +408,7 @@ impl KanbanBoard {
         Ok(())
     }
 
-    pub fn get_tasks_list(&self) -> Vec<String> {
+    pub fn get_tasks_list(&self) -> Result<Vec<String>, AppError> {
         let mut tasks_list: Vec<String> = Vec::new();
         for swimlane in vec![
             TaskStatus::ToDo,
@@ -390,24 +416,28 @@ impl KanbanBoard {
             TaskStatus::Blocked,
             TaskStatus::InReview,
         ] {
-            let tasks: Vec<String> = self.boards.get(&swimlane).unwrap().to_vec();
+            let tasks: Vec<String> = match self.boards.get(&swimlane) {
+                Some(s) => s.to_vec(),
+                None => return Err(AppError::SwimlaneNotFoundError(format!("Swimlane {} not found.", swimlane)))
+            };
             for task_id in tasks {
-                if TaskItem::check_if_file_exists(&task_id).unwrap() == true {
+                if TaskItem::check_if_file_exists(&task_id)? == true {
                     tasks_list.push(task_id);
                 }
             }
         }
-        tasks_list
+        Ok(tasks_list)
     }
 
-    pub fn add_to_board(&mut self, task_id: String, swimlane: TaskStatus) {
+    pub fn add_to_board(&mut self, task_id: String, swimlane: TaskStatus) -> Result<(), AppError> {
         let mut tasks_list: Vec<String> = match self.boards.get(&swimlane) {
             Some(s) => s.to_vec(),
             None => Vec::new(),
         };
         tasks_list.push(task_id);
         self.boards.insert(swimlane, tasks_list);
-        self.write_to_file().unwrap();
+        self.write_to_file()?;
+        Ok(())
     }
 
     pub fn update_board(
@@ -426,25 +456,42 @@ impl KanbanBoard {
                 format!("{} \nPlease select from following options: \n1) to-do 2) in-progress 3) blocked 4) in-review 5) done\n", new_swimlane.to_string())))
         };
 
-        let mut tasks_list: Vec<String> = self.boards.get(&current_swimlane).unwrap().to_vec();
-        let index: usize = tasks_list.iter().position(|x| *x == task_id).unwrap();
-        tasks_list.remove(index);
-        self.boards.insert(current_swimlane, tasks_list);
+        let mut tasks_list: Vec<String> = match self.boards.get(&current_swimlane) {
+            Some(s) => s.to_vec(),
+            None => return Err(AppError::SwimlaneNotFoundError(format!("Swimlane {} not found.", current_swimlane)))
+        };
+        match tasks_list.iter().position(|x| *x == task_id) {
+            Some(s) => {
+                tasks_list.remove(s);
+                self.boards.insert(current_swimlane, tasks_list);
+            },
+            None => {}
+        };
 
-        let mut tasks_list: Vec<String> = self.boards.get(&new_swimlane).unwrap().to_vec();
+        let mut tasks_list: Vec<String> = match self.boards.get(&new_swimlane) {
+            Some(s) => s.to_vec(),
+            None => return Err(AppError::SwimlaneNotFoundError(format!("Swimlane {} not found.", new_swimlane)))
+        };
         tasks_list.push(task_id);
         self.boards.insert(new_swimlane, tasks_list);
-        self.write_to_file().unwrap();
-
+        self.write_to_file()?;
         Ok(())
     }
 
-    pub fn delete_task(&mut self, task_id: String, swimlane: TaskStatus) {
-        let mut tasks_list: Vec<String> = self.boards.get(&swimlane).unwrap().to_vec();
-        let index: usize = tasks_list.iter().position(|x| *x == task_id).unwrap();
-        tasks_list.remove(index);
-        self.boards.insert(swimlane, tasks_list);
-        self.write_to_file().unwrap();
+    pub fn delete_task(&mut self, task_id: String, swimlane: TaskStatus) -> Result<(), AppError> {
+        let mut tasks_list: Vec<String> = match self.boards.get(&swimlane) {
+            Some(s) => s.to_vec(),
+            None => return Err(AppError::SwimlaneNotFoundError(format!("Swimlane {} not found.", swimlane)))
+        };
+        match tasks_list.iter().position(|x| *x == task_id) {
+            Some(s) => {
+                tasks_list.remove(s);
+                self.boards.insert(swimlane, tasks_list);
+            },
+            None => {}
+        };
+        self.write_to_file()?;
+        Ok(())
     }
 
     pub fn load_from_file() -> Result<Self, AppError> {

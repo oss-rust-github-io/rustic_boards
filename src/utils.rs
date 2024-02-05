@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 use crate::{
     constants::{ACTIVE_SUBTASKS_PATH, ACTIVE_TASKS_PATH, APP_DIR_PATH},
     error::AppError,
@@ -30,8 +32,12 @@ impl TimeStamp {
         }
     }
 
-    pub fn to_naivedate(self) -> NaiveDate {
-        NaiveDate::from_ymd_opt(self.year, self.month, self.day).unwrap()
+    pub fn to_naivedate(self) -> Result<NaiveDate, AppError> {
+        let date = match NaiveDate::from_ymd_opt(self.year, self.month, self.day) {
+            Some(s) => s,
+            None => return Err(AppError::NaiveDateConversionError(format!("{}/{}/{}", self.day, self.month, self.year)))
+        };
+        Ok(date)
     }
 }
 

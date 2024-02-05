@@ -85,7 +85,7 @@ fn task_priority() -> Vec<TaskPriority> {
 }
 
 pub fn tasks_select_prompt(message: &str, boards: &KanbanBoard) -> Result<String, AppError> {
-    let tasks_list: String = match Select::new(message, boards.get_tasks_list()).prompt() {
+    let tasks_list: String = match Select::new(message, boards.get_tasks_list()?).prompt() {
         Ok(s) => s,
         Err(e) => return Err(AppError::SelectPromptError(e.to_string())),
     };

@@ -75,28 +75,31 @@ impl SubTaskItem {
         Ok(task_item)
     }
 
-    pub fn show_task(subtask_id: &String) {
-        let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file().unwrap();
-        let subtask_item: SubTaskItem = SubTaskItem::get_task(&subtask_id.to_string()).unwrap();
+    pub fn show_task(subtask_id: &String) -> Result<TableDisplay, AppError> {
+        let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file()?;
+        let subtask_item: SubTaskItem = SubTaskItem::get_task(&subtask_id.to_string())?;
         let subtask_added_on: String = subtask_item
             .subtask_added_on
-            .to_naivedate()
+            .to_naivedate()?
             .format("%b %e, %Y")
             .to_string();
         let subtask_started_on: String = match subtask_item.subtask_started_on {
-            Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
+            Some(s) => s.to_naivedate()?.format("%b %e, %Y").to_string(),
             None => "None".to_string(),
         };
         let subtask_deadline: String = match subtask_item.subtask_deadline {
-            Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
+            Some(s) => s.to_naivedate()?.format("%b %e, %Y").to_string(),
             None => "None".to_string(),
         };
         let subtask_completed_on: String = match subtask_item.subtask_completed_on {
-            Some(s) => s.to_naivedate().format("%b %e, %Y").to_string(),
+            Some(s) => s.to_naivedate()?.format("%b %e, %Y").to_string(),
             None => "None".to_string(),
         };
-        let task_id: String = tasks_link.get_task_id(subtask_id).unwrap();
-        let display_table: TableDisplay = vec![
+        let task_id: String = match tasks_link.get_task_id(subtask_id) {
+            Some(s) => s,
+            None => return Err(AppError::TaskNotFound(format!("No parent task found for subtask {}", subtask_id)))
+        };
+        let display_vec: Vec<Vec<String>> = vec![
             vec!["Subtask ID".to_string(), subtask_item.subtask_id],
             vec!["Subtask Name".to_string(), subtask_item.subtask_name],
             vec![
@@ -116,12 +119,14 @@ impl SubTaskItem {
                 subtask_item.subtask_priority.to_string(),
             ],
             vec!["Parent Task".to_string(), task_id],
-        ]
-        .table()
-        .display()
-        .unwrap();
+        ];
 
-        println!("{}", display_table);
+        let display_table: TableDisplay = match display_vec.table().display() {
+            Ok(s) => s,
+            Err(e) => return Err(AppError::TableDisplayParseError(e.to_string()))
+        };
+
+        Ok(display_table)
     }
 
     pub fn change_swimlane(subtask_id: &String, swimlane: &str) -> Result<(), AppError> {
@@ -135,7 +140,7 @@ impl SubTaskItem {
                 format!("{} \nPlease select from following options: \n1) to-do 2) in-progress 3) blocked 4) in-review 5) done\n", swimlane.to_string())))
         };
 
-        let mut subtask_item: SubTaskItem = SubTaskItem::get_task(&subtask_id.to_string()).unwrap();
+        let mut subtask_item: SubTaskItem = SubTaskItem::get_task(&subtask_id.to_string())?;
 
         if (subtask_item.subtask_status == TaskStatus::ToDo) && (new_swimlane != TaskStatus::ToDo) {
             subtask_item.subtask_started_on = Some(TimeStamp::new());
@@ -146,7 +151,7 @@ impl SubTaskItem {
         }
 
         subtask_item.subtask_status = new_swimlane;
-        subtask_item.write_to_file().unwrap();
+        subtask_item.write_to_file()?;
         Ok(())
     }
 

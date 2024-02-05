@@ -27,12 +27,24 @@ fn main() {
     };
 
     if boards_file_exists == false {
-        boards.add_to_board(String::new(), TaskStatus::ToDo);
-        boards.add_to_board(String::new(), TaskStatus::InProgress);
-        boards.add_to_board(String::new(), TaskStatus::Blocked);
-        boards.add_to_board(String::new(), TaskStatus::InReview);
-        boards.add_to_board(String::new(), TaskStatus::Done);
-        boards.write_to_file().unwrap();
+        boards.add_to_board(String::new(), TaskStatus::ToDo).unwrap_or_else(|err| {
+            println!("{}", err.to_string());
+        });
+        boards.add_to_board(String::new(), TaskStatus::InProgress).unwrap_or_else(|err| {
+            println!("{}", err.to_string());
+        });
+        boards.add_to_board(String::new(), TaskStatus::Blocked).unwrap_or_else(|err| {
+            println!("{}", err.to_string());
+        });
+        boards.add_to_board(String::new(), TaskStatus::InReview).unwrap_or_else(|err| {
+            println!("{}", err.to_string());
+        });
+        boards.add_to_board(String::new(), TaskStatus::Done).unwrap_or_else(|err| {
+            println!("{}", err.to_string());
+        });
+        boards.write_to_file().unwrap_or_else(|err| {
+            println!("{}", err.to_string());
+        });
     };
 
     let links_file_exists: bool = TaskToSubtaskMap::check_if_file_exists().unwrap();
@@ -73,7 +85,9 @@ fn main() {
                     TaskItem::new(task_name, task_description, task_deadline, task_priority)
                         .unwrap();
                 task_item.write_to_file().unwrap();
-                boards.add_to_board(task_item.task_id.clone(), task_item.task_status);
+                boards.add_to_board(task_item.task_id.clone(), task_item.task_status).unwrap_or_else(|err| {
+                    println!("{}", err.to_string());
+                });
 
                 let mut subtasks_list: Vec<String> = Vec::new();
                 loop {
@@ -110,18 +124,24 @@ fn main() {
                             subtask_priority,
                         )
                         .unwrap();
-                        subtask_item.write_to_file().unwrap();
+                        subtask_item.write_to_file().unwrap_or_else(|err| {
+                            println!("{}", err.to_string());
+                        });
                         subtasks_list.push(subtask_item.subtask_id.clone());
                         boards.add_to_board(
                             subtask_item.subtask_id.clone(),
                             subtask_item.subtask_status,
-                        );
+                        ).unwrap_or_else(|err| {
+                            println!("{}", err.to_string());
+                        });
                     } else {
                         break;
                     }
                 }
 
-                tasks_link.add_new_link(task_item.task_id.clone(), &subtasks_list);
+                tasks_link.add_new_link(task_item.task_id.clone(), &subtasks_list).unwrap_or_else(|err| {
+                    println!("{}", err.to_string());
+                });
             }
             ["add", "subtask"] => {
                 let subtask_name: String = text_input_prompt("Subtask Name:", None).unwrap();
@@ -152,9 +172,15 @@ fn main() {
                     subtask_priority,
                 )
                 .unwrap();
-                subtask_item.write_to_file().unwrap();
-                boards.add_to_board(subtask_item.subtask_id.clone(), subtask_item.subtask_status);
-                tasks_link.add_new_link(task_id, &vec![subtask_item.subtask_id]);
+                subtask_item.write_to_file().unwrap_or_else(|err| {
+                    println!("{}", err.to_string());
+                });
+                boards.add_to_board(subtask_item.subtask_id.clone(), subtask_item.subtask_status).unwrap_or_else(|err| {
+                    println!("{}", err.to_string());
+                });
+                tasks_link.add_new_link(task_id, &vec![subtask_item.subtask_id]).unwrap_or_else(|err| {
+                    println!("{}", err.to_string());
+                });
             }
             ["edit", "task", task_id] => {
                 let mut task_item: TaskItem = TaskItem::get_task(&task_id.to_string()).unwrap();
@@ -162,27 +188,39 @@ fn main() {
                     text_input_prompt("Task Description:", Some(&task_item.task_description[..]))
                         .unwrap();
                 let task_priority: TaskPriority = select_prompt("Task Priority:").unwrap();
+                let task_deadline: Option<TimeStamp> = match task_item.task_deadline {
+                    Some(_) => {
+                        let deadline_check: bool = confirm_prompt(
+                            "Do you want to change the deadline for this task?",
+                            Some("It's recommended to set a deadline to track for completion."),
+                        )
+                        .unwrap();
 
-                let deadline_check: bool = match task_item.task_deadline {
-                    Some(_) => confirm_prompt(
-                        "Do you want to change the deadline for this task?",
-                        Some("It's recommended to set a deadline to track for completion."),
-                    )
-                    .unwrap(),
-                    None => confirm_prompt(
-                        "Is there a deadline for this task?",
-                        Some("It's recommended to set a deadline to track for completion."),
-                    )
-                    .unwrap(),
-                };
-
-                let task_deadline: Option<TimeStamp> = match deadline_check {
-                    true => {
-                        let input_deadline: NaiveDate =
-                            date_input_prompt("Task Deadline:").unwrap();
-                        Some(TimeStamp::convert(input_deadline))
+                        match deadline_check {
+                            true => {
+                                let input_deadline: NaiveDate =
+                                    date_input_prompt("Task Deadline:").unwrap();
+                                Some(TimeStamp::convert(input_deadline))
+                            }
+                            false => task_item.task_deadline,
+                        }
                     }
-                    false => None,
+                    None => {
+                        let deadline_check: bool = confirm_prompt(
+                            "Is there a deadline for this task?",
+                            Some("It's recommended to set a deadline to track for completion."),
+                        )
+                        .unwrap();
+
+                        match deadline_check {
+                            true => {
+                                let input_deadline: NaiveDate =
+                                    date_input_prompt("Task Deadline:").unwrap();
+                                Some(TimeStamp::convert(input_deadline))
+                            }
+                            false => None,
+                        }
+                    }
                 };
 
                 let mut subtasks_list: Vec<String> = Vec::new();
@@ -220,22 +258,30 @@ fn main() {
                             subtask_priority,
                         )
                         .unwrap();
-                        subtask_item.write_to_file().unwrap();
+                        subtask_item.write_to_file().unwrap_or_else(|err| {
+                            println!("{}", err.to_string());
+                        });
                         subtasks_list.push(subtask_item.subtask_id.clone());
                         boards.add_to_board(
                             subtask_item.subtask_id.clone(),
                             subtask_item.subtask_status,
-                        );
+                        ).unwrap_or_else(|err| {
+                            println!("{}", err.to_string());
+                        });
                     } else {
                         break;
                     }
                 }
 
-                tasks_link.add_new_link(task_item.task_id.clone(), &subtasks_list);
+                tasks_link.add_new_link(task_item.task_id.clone(), &subtasks_list).unwrap_or_else(|err| {
+                    println!("{}", err.to_string());
+                });
                 task_item.task_description = task_description;
                 task_item.task_priority = task_priority;
                 task_item.task_deadline = task_deadline;
-                task_item.write_to_file().unwrap();
+                task_item.write_to_file().unwrap_or_else(|err| {
+                    println!("{}", err.to_string());
+                });
             }
             ["edit", "subtask", subtask_id] => {
                 let mut subtask_item: SubTaskItem =
@@ -301,7 +347,9 @@ fn main() {
                 subtask_item.subtask_description = subtask_description;
                 subtask_item.subtask_priority = subtask_priority;
                 subtask_item.subtask_deadline = subtask_deadline;
-                subtask_item.write_to_file().unwrap();
+                subtask_item.write_to_file().unwrap_or_else(|err| {
+                    println!("{}", err.to_string());
+                });
             }
             ["link", "subtask", subtask_id] => {
                 let current_task_id: String =
@@ -319,7 +367,9 @@ fn main() {
                     Err(e) => println!("{}", e),
                 };
 
-                TaskItem::change_swimlane(&task_id.to_string(), swimlane).unwrap();
+                TaskItem::change_swimlane(&task_id.to_string(), swimlane).unwrap_or_else(|err| {
+                    println!("{}", err.to_string());
+                });
             }
             ["move", "subtask", subtask_id, swimlane] => {
                 let subtask_item: SubTaskItem =
@@ -333,12 +383,14 @@ fn main() {
                     Err(e) => println!("{}", e),
                 };
 
-                SubTaskItem::change_swimlane(&subtask_id.to_string(), swimlane).unwrap();
+                SubTaskItem::change_swimlane(&subtask_id.to_string(), swimlane).unwrap_or_else(|err| {
+                    println!("{}", err.to_string());
+                });
             }
             ["open", "task", task_id] => {
                 match TaskItem::check_if_file_exists(&task_id.to_string()).unwrap() {
                     true => {
-                        TaskItem::show_task(&task_id.to_string());
+                        println!("{}", TaskItem::show_task(&task_id.to_string()).unwrap());
                     }
                     false => println!("{}\n", AppError::TaskNotFound(task_id.to_string())),
                 }
@@ -346,7 +398,7 @@ fn main() {
             ["open", "subtask", subtask_id] => {
                 match SubTaskItem::check_if_file_exists(&subtask_id.to_string()).unwrap() {
                     true => {
-                        SubTaskItem::show_task(&subtask_id.to_string());
+                        println!("{}", SubTaskItem::show_task(&subtask_id.to_string()).unwrap());
                     }
                     false => println!("{}\n", AppError::TaskNotFound(subtask_id.to_string())),
                 }
@@ -358,21 +410,39 @@ fn main() {
                 for subtask_id in subtasks_list {
                     let subtask_item: SubTaskItem =
                         SubTaskItem::get_task(&subtask_id.to_string()).unwrap();
-                    boards.delete_task(subtask_id.to_string(), subtask_item.subtask_status);
-                    SubTaskItem::delete_task(&subtask_id.to_string()).unwrap();
-                    tasks_link.delete_subtask(subtask_id.to_string());
+                    boards.delete_task(subtask_id.to_string(), subtask_item.subtask_status).unwrap_or_else(|err| {
+                        println!("{}", err.to_string());
+                    });
+                    SubTaskItem::delete_task(&subtask_id.to_string()).unwrap_or_else(|err| {
+                        println!("{}", err.to_string());
+                    });
+                    tasks_link.delete_subtask(subtask_id.to_string()).unwrap_or_else(|err| {
+                        println!("{}", err.to_string());
+                    });
                 }
 
-                boards.delete_task(task_id.to_string(), task_item.task_status);
-                TaskItem::delete_task(&task_id.to_string()).unwrap();
-                tasks_link.delete_task(&task_id.to_string());
+                boards.delete_task(task_id.to_string(), task_item.task_status).unwrap_or_else(|err| {
+                    println!("{}", err.to_string());
+                });
+                TaskItem::delete_task(&task_id.to_string()).unwrap_or_else(|err| {
+                    println!("{}", err.to_string());
+                });
+                tasks_link.delete_task(&task_id.to_string()).unwrap_or_else(|err| {
+                    println!("{}", err.to_string());
+                });
             }
             ["delete", "subtask", subtask_id] => {
                 let subtask_item: SubTaskItem =
                     SubTaskItem::get_task(&subtask_id.to_string()).unwrap();
-                boards.delete_task(subtask_id.to_string(), subtask_item.subtask_status);
-                SubTaskItem::delete_task(&subtask_id.to_string()).unwrap();
-                tasks_link.delete_subtask(subtask_id.to_string());
+                boards.delete_task(subtask_id.to_string(), subtask_item.subtask_status).unwrap_or_else(|err| {
+                    println!("{}", err.to_string());
+                });
+                SubTaskItem::delete_task(&subtask_id.to_string()).unwrap_or_else(|err| {
+                    println!("{}", err.to_string());
+                });
+                tasks_link.delete_subtask(subtask_id.to_string()).unwrap_or_else(|err| {
+                    println!("{}", err.to_string());
+                });
             }
             ["show", "task", swimlane] => {
                 match boards.show_tasks(swimlane) {
