@@ -40,3 +40,7 @@ Built on the robust foundations of Rust, known for its speed, safety, and memory
 | `filter priority <Keyword>` | To filter all tasks and subtasks based on priority <br> (high, medium, low) |
 | `help` | To view all commands for the application |
 | `exit` | To exit the application |
+
+## Code Repository
+
+Visit <https://github.com/oss-rust-github-io/rustic_boards> for application source code.
