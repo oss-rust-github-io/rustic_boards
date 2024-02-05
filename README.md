@@ -11,6 +11,8 @@ It simplifies task tracking and collaboration with an intuitive command line int
 Rustic Boards emerges from the philosophy that performance should not be sacrificed for usability. 
 Built on the robust foundations of Rust, known for its speed, safety, and memory efficiency, Rustic Boards offers a powerful CLI-based Kanban board experience like no other.
 
+**Note: The application is currently supported only on Windows machines. Support for other operating systems is part of future roadmap.**
+
 ## Design
 
 1. Clear and intuitive CLI command structure
@@ -40,6 +42,16 @@ Built on the robust foundations of Rust, known for its speed, safety, and memory
 | `filter priority <Keyword>` | To filter all tasks and subtasks based on priority <br> (high, medium, low) |
 | `help` | To view all commands for the application |
 | `exit` | To exit the application |
+
+## Installation
+
+1. Build from source:
+   - Clone the Git repository (main branch)
+   - Install rust toolkit (<https://www.rust-lang.org/tools/install>)
+   - Execute command: `cargo build --release`
+   - Copy the `rustic_boards.exe` file in "target/release" folder to "C:\rustic_boards"
+   - Add the path "C:\rustic_boards" to PATH system environment variable (For more reference, visit <https://learn.microsoft.com/en-us/previous-versions/office/developer/sharepoint-2010/ee537574(v=office.14)>)
+   - You should be able to run `rustic_boards` command on Command Prompt or Powershell now.
 
 ## Code Repository
 
