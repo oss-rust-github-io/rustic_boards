@@ -1,23 +1,23 @@
 //! # Rustic Boards
-//! 
-//! Rustic Boards is a sleek and powerful CLI-based Kanban board application built with Rust, 
-//! combining performance and usability for seamless task management. 
+//!
+//! Rustic Boards is a sleek and powerful CLI-based Kanban board application built with Rust,
+//! combining performance and usability for seamless task management.
 //! It simplifies task tracking and collaboration with an intuitive command line interface and robust features.
-//! 
-//! Rustic Boards emerges from the philosophy that performance should not be sacrificed for usability. 
-//! Built on the robust foundations of Rust, known for its speed, safety, and memory efficiency, 
+//!
+//! Rustic Boards emerges from the philosophy that performance should not be sacrificed for usability.
+//! Built on the robust foundations of Rust, known for its speed, safety, and memory efficiency,
 //! Rustic Boards offers a powerful CLI-based Kanban board experience like no other.
-//! 
+//!
 //! ## Design
-//! 
+//!
 //! 1. Clear and intuitive CLI command structure
 //! 2. Simple binary format for storing the Kanban board data
 //! 3. Organize tasks into status categories (e.g., "To Do", "In Progress", "Blocked", "In Review", "Done") to represent the workflow stages
 //! 4. Robust input validation to handle unexpected user inputs gracefully
 //! 5. Provide clear and helpful error messages to guide users when mistakes or issues occur
-//! 
+//!
 //! ## CLI Commands
-//! 
+//!
 //! | Command | Description |
 //! | ------- | ----------- |
 //! | `add task` | To add a new task into board (along with subtasks - optional) |
@@ -37,25 +37,25 @@
 //! | `filter priority <Keyword>` | To filter all tasks and subtasks based on priority <br> (high, medium, low) |
 //! | `help` | To view all commands for the application |
 //! | `exit` | To exit the application |
-//! 
+//!
 //! ## Code Repository
-//! 
+//!
 //! Visit <https://github.com/oss-rust-github-io/rustic_boards> for application source code.
 
+pub mod boards;
+pub mod constants;
 pub mod error;
 pub mod links;
-pub mod tasks;
-pub mod utils;
-pub mod boards;
 pub mod prompt;
 pub mod subtasks;
-pub mod constants;
+pub mod tasks;
+pub mod utils;
 
-use error::AppError;
 use boards::KanbanBoard;
-use links::TaskToSubtaskMap;
 use chrono::prelude::NaiveDate;
-use cli_table::{Table, Cell, Style};
+use cli_table::{Cell, Style, Table};
+use error::AppError;
+use links::TaskToSubtaskMap;
 use prompt::{
     confirm_prompt, date_input_prompt, select_prompt, tasks_select_prompt, text_input_prompt,
 };
@@ -72,21 +72,31 @@ fn main() {
     };
 
     if boards_file_exists == false {
-        boards.add_to_board(String::new(), TaskStatus::ToDo).unwrap_or_else(|err| {
-            println!("{}", err.to_string());
-        });
-        boards.add_to_board(String::new(), TaskStatus::InProgress).unwrap_or_else(|err| {
-            println!("{}", err.to_string());
-        });
-        boards.add_to_board(String::new(), TaskStatus::Blocked).unwrap_or_else(|err| {
-            println!("{}", err.to_string());
-        });
-        boards.add_to_board(String::new(), TaskStatus::InReview).unwrap_or_else(|err| {
-            println!("{}", err.to_string());
-        });
-        boards.add_to_board(String::new(), TaskStatus::Done).unwrap_or_else(|err| {
-            println!("{}", err.to_string());
-        });
+        boards
+            .add_to_board(String::new(), TaskStatus::ToDo)
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string());
+            });
+        boards
+            .add_to_board(String::new(), TaskStatus::InProgress)
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string());
+            });
+        boards
+            .add_to_board(String::new(), TaskStatus::Blocked)
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string());
+            });
+        boards
+            .add_to_board(String::new(), TaskStatus::InReview)
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string());
+            });
+        boards
+            .add_to_board(String::new(), TaskStatus::Done)
+            .unwrap_or_else(|err| {
+                println!("{}", err.to_string());
+            });
         boards.write_to_file().unwrap_or_else(|err| {
             println!("{}", err.to_string());
         });
@@ -130,9 +140,11 @@ fn main() {
                     TaskItem::new(task_name, task_description, task_deadline, task_priority)
                         .unwrap();
                 task_item.write_to_file().unwrap();
-                boards.add_to_board(task_item.task_id.clone(), task_item.task_status).unwrap_or_else(|err| {
-                    println!("{}", err.to_string());
-                });
+                boards
+                    .add_to_board(task_item.task_id.clone(), task_item.task_status)
+                    .unwrap_or_else(|err| {
+                        println!("{}", err.to_string());
+                    });
 
                 let mut subtasks_list: Vec<String> = Vec::new();
                 loop {
@@ -173,20 +185,24 @@ fn main() {
                             println!("{}", err.to_string());
                         });
                         subtasks_list.push(subtask_item.subtask_id.clone());
-                        boards.add_to_board(
-                            subtask_item.subtask_id.clone(),
-                            subtask_item.subtask_status,
-                        ).unwrap_or_else(|err| {
-                            println!("{}", err.to_string());
-                        });
+                        boards
+                            .add_to_board(
+                                subtask_item.subtask_id.clone(),
+                                subtask_item.subtask_status,
+                            )
+                            .unwrap_or_else(|err| {
+                                println!("{}", err.to_string());
+                            });
                     } else {
                         break;
                     }
                 }
 
-                tasks_link.add_new_link(task_item.task_id.clone(), &subtasks_list).unwrap_or_else(|err| {
-                    println!("{}", err.to_string());
-                });
+                tasks_link
+                    .add_new_link(task_item.task_id.clone(), &subtasks_list)
+                    .unwrap_or_else(|err| {
+                        println!("{}", err.to_string());
+                    });
                 println!("{} created successfully.", task_item.task_id);
 
                 if subtasks_list.len() > 0 {
@@ -225,13 +241,20 @@ fn main() {
                 subtask_item.write_to_file().unwrap_or_else(|err| {
                     println!("{}", err.to_string());
                 });
-                boards.add_to_board(subtask_item.subtask_id.clone(), subtask_item.subtask_status).unwrap_or_else(|err| {
-                    println!("{}", err.to_string());
-                });
-                tasks_link.add_new_link(task_id.clone(), &vec![subtask_item.subtask_id.clone()]).unwrap_or_else(|err| {
-                    println!("{}", err.to_string());
-                });
-                println!("{} created successfully and linked to parent {}.", subtask_item.subtask_id, task_id);
+                boards
+                    .add_to_board(subtask_item.subtask_id.clone(), subtask_item.subtask_status)
+                    .unwrap_or_else(|err| {
+                        println!("{}", err.to_string());
+                    });
+                tasks_link
+                    .add_new_link(task_id.clone(), &vec![subtask_item.subtask_id.clone()])
+                    .unwrap_or_else(|err| {
+                        println!("{}", err.to_string());
+                    });
+                println!(
+                    "{} created successfully and linked to parent {}.",
+                    subtask_item.subtask_id, task_id
+                );
             }
             ["edit", "task", task_id] => {
                 let mut task_item: TaskItem = TaskItem::get_task(&task_id.to_string()).unwrap();
@@ -313,20 +336,24 @@ fn main() {
                             println!("{}", err.to_string());
                         });
                         subtasks_list.push(subtask_item.subtask_id.clone());
-                        boards.add_to_board(
-                            subtask_item.subtask_id.clone(),
-                            subtask_item.subtask_status,
-                        ).unwrap_or_else(|err| {
-                            println!("{}", err.to_string());
-                        });
+                        boards
+                            .add_to_board(
+                                subtask_item.subtask_id.clone(),
+                                subtask_item.subtask_status,
+                            )
+                            .unwrap_or_else(|err| {
+                                println!("{}", err.to_string());
+                            });
                     } else {
                         break;
                     }
                 }
 
-                tasks_link.add_new_link(task_item.task_id.clone(), &subtasks_list).unwrap_or_else(|err| {
-                    println!("{}", err.to_string());
-                });
+                tasks_link
+                    .add_new_link(task_item.task_id.clone(), &subtasks_list)
+                    .unwrap_or_else(|err| {
+                        println!("{}", err.to_string());
+                    });
                 task_item.task_description = task_description;
                 task_item.task_priority = task_priority;
                 task_item.task_deadline = task_deadline;
@@ -419,19 +446,24 @@ fn main() {
                     .update_link(subtask_id.to_string(), current_task_id, new_task_id.clone())
                     .unwrap();
 
-                println!("{} successfully linked to parent {}.", subtask_id, new_task_id);
+                println!(
+                    "{} successfully linked to parent {}.",
+                    subtask_id, new_task_id
+                );
             }
             ["move", "task", task_id, swimlane] => {
                 let task_item: TaskItem = TaskItem::get_task(&task_id.to_string()).unwrap();
                 match boards.update_board(task_id.to_string(), task_item.task_status, swimlane) {
                     Ok(_) => {
-                        TaskItem::change_swimlane(&task_id.to_string(), swimlane).unwrap_or_else(|err| {
-                            println!("{}", err.to_string());
-                        });
+                        TaskItem::change_swimlane(&task_id.to_string(), swimlane).unwrap_or_else(
+                            |err| {
+                                println!("{}", err.to_string());
+                            },
+                        );
                         println!("{} moved from {} swimlane.", task_id, swimlane);
                     }
                     Err(e) => println!("{}", e),
-                };                
+                };
             }
             ["move", "subtask", subtask_id, swimlane] => {
                 let subtask_item: SubTaskItem =
@@ -442,9 +474,10 @@ fn main() {
                     swimlane,
                 ) {
                     Ok(_) => {
-                        SubTaskItem::change_swimlane(&subtask_id.to_string(), swimlane).unwrap_or_else(|err| {
-                            println!("{}", err.to_string());
-                        });
+                        SubTaskItem::change_swimlane(&subtask_id.to_string(), swimlane)
+                            .unwrap_or_else(|err| {
+                                println!("{}", err.to_string());
+                            });
                         println!("{} moved from {} swimlane.", subtask_id, swimlane);
                     }
                     Err(e) => println!("{}", e),
@@ -461,7 +494,10 @@ fn main() {
             ["open", "subtask", subtask_id] => {
                 match SubTaskItem::check_if_file_exists(&subtask_id.to_string()).unwrap() {
                     true => {
-                        println!("{}", SubTaskItem::show_task(&subtask_id.to_string()).unwrap());
+                        println!(
+                            "{}",
+                            SubTaskItem::show_task(&subtask_id.to_string()).unwrap()
+                        );
                     }
                     false => println!("{}\n", AppError::TaskNotFound(subtask_id.to_string())),
                 }
@@ -473,41 +509,53 @@ fn main() {
                 for subtask_id in subtasks_list {
                     let subtask_item: SubTaskItem =
                         SubTaskItem::get_task(&subtask_id.to_string()).unwrap();
-                    boards.delete_task(subtask_id.to_string(), subtask_item.subtask_status).unwrap_or_else(|err| {
-                        println!("{}", err.to_string());
-                    });
+                    boards
+                        .delete_task(subtask_id.to_string(), subtask_item.subtask_status)
+                        .unwrap_or_else(|err| {
+                            println!("{}", err.to_string());
+                        });
                     SubTaskItem::delete_task(&subtask_id.to_string()).unwrap_or_else(|err| {
                         println!("{}", err.to_string());
                     });
-                    tasks_link.delete_subtask(subtask_id.to_string()).unwrap_or_else(|err| {
-                        println!("{}", err.to_string());
-                    });
+                    tasks_link
+                        .delete_subtask(subtask_id.to_string())
+                        .unwrap_or_else(|err| {
+                            println!("{}", err.to_string());
+                        });
                 }
 
-                boards.delete_task(task_id.to_string(), task_item.task_status).unwrap_or_else(|err| {
-                    println!("{}", err.to_string());
-                });
+                boards
+                    .delete_task(task_id.to_string(), task_item.task_status)
+                    .unwrap_or_else(|err| {
+                        println!("{}", err.to_string());
+                    });
                 TaskItem::delete_task(&task_id.to_string()).unwrap_or_else(|err| {
                     println!("{}", err.to_string());
                 });
-                tasks_link.delete_task(&task_id.to_string()).unwrap_or_else(|err| {
-                    println!("{}", err.to_string());
-                });
+                tasks_link
+                    .delete_task(&task_id.to_string())
+                    .unwrap_or_else(|err| {
+                        println!("{}", err.to_string());
+                    });
 
                 println!("{} deleted successfully.", task_id);
             }
             ["delete", "subtask", subtask_id] => {
                 let subtask_item: SubTaskItem =
                     SubTaskItem::get_task(&subtask_id.to_string()).unwrap();
-                boards.delete_task(subtask_id.to_string(), subtask_item.subtask_status).unwrap_or_else(|err| {
-                    println!("{}", err.to_string());
-                });
+                boards
+                    .delete_task(subtask_id.to_string(), subtask_item.subtask_status)
+                    .unwrap_or_else(|err| {
+                        println!("{}", err.to_string());
+                    });
                 SubTaskItem::delete_task(&subtask_id.to_string()).unwrap_or_else(|err| {
                     println!("{}", err.to_string());
                 });
-                tasks_link.delete_subtask(subtask_id.to_string()).unwrap_or_else(|err| {
-                    println!("{}", err.to_string());
-                });
+                tasks_link
+                    .delete_subtask(subtask_id.to_string())
+                    .unwrap_or_else(|err| {
+                        println!("{}", err.to_string());
+                    });
                 println!("{} deleted successfully.", subtask_id);
             }
             ["show", "task", swimlane] => {
@@ -551,14 +599,17 @@ fn main() {
                     vec!["exit", "To exit the application"],
                 ];
 
-                match display_vec.table()
+                match display_vec
+                    .table()
                     .title(vec![
                         "Command".cell().bold(true),
                         "Description".cell().bold(true),
-                    ]).display() {
-                        Ok(s) => println!("{}", s),
-                        Err(e) => println!("{}", AppError::TableDisplayParseError(e.to_string()))
-                    };
+                    ])
+                    .display()
+                {
+                    Ok(s) => println!("{}", s),
+                    Err(e) => println!("{}", AppError::TableDisplayParseError(e.to_string())),
+                };
             }
             ["exit"] => {
                 break;

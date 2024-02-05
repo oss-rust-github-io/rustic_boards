@@ -39,7 +39,12 @@ impl TimeStamp {
     pub fn to_naivedate(self) -> Result<NaiveDate, AppError> {
         let date = match NaiveDate::from_ymd_opt(self.year, self.month, self.day) {
             Some(s) => s,
-            None => return Err(AppError::NaiveDateConversionError(format!("{}/{}/{}", self.day, self.month, self.year)))
+            None => {
+                return Err(AppError::NaiveDateConversionError(format!(
+                    "{}/{}/{}",
+                    self.day, self.month, self.year
+                )))
+            }
         };
         Ok(date)
     }

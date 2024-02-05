@@ -1,7 +1,7 @@
 //! Defines the different user input prompts for interacting with the application
 
-use chrono::prelude::{Local, NaiveDate};
 use crate::{boards::KanbanBoard, error::AppError, utils::TaskPriority};
+use chrono::prelude::{Local, NaiveDate};
 use inquire::{
     formatter::DEFAULT_DATE_FORMATTER, ui::RenderConfig, validator::Validation, Confirm,
     CustomType, Select, Text,

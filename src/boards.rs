@@ -5,9 +5,9 @@ use crate::{
     tasks::TaskItem, utils::create_app_dirs, TaskPriority, TaskStatus, TimeStamp,
 };
 use chrono::{prelude::*, Days};
+use cli_table::{Cell, Style, Table, TableDisplay};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::Path};
-use cli_table::{Cell, Style, Table, TableDisplay};
 
 /// Rust structure for Kanban Board
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
@@ -42,7 +42,12 @@ impl KanbanBoard {
         for swimlane in swimlane_to_show {
             let tasks: &Vec<String> = match self.boards.get(&swimlane) {
                 Some(s) => s,
-                None => return Err(AppError::SwimlaneNotFoundError(format!("Swimlane {} not found.", swimlane)))
+                None => {
+                    return Err(AppError::SwimlaneNotFoundError(format!(
+                        "Swimlane {} not found.",
+                        swimlane
+                    )))
+                }
             };
             println!("====================");
             println!("{:#?}", swimlane.to_string());
@@ -76,10 +81,11 @@ impl KanbanBoard {
                     "Deadline".cell().bold(true),
                     "Subtasks".cell().bold(true),
                 ])
-                .display() {
-                    Ok(s) => s,
-                    Err(e) => return Err(AppError::TableDisplayParseError(e.to_string()))
-                };
+                .display()
+            {
+                Ok(s) => s,
+                Err(e) => return Err(AppError::TableDisplayParseError(e.to_string())),
+            };
 
             println!("{}", display_table);
         }
@@ -106,7 +112,12 @@ impl KanbanBoard {
         for swimlane in swimlane_to_show {
             let tasks: &Vec<String> = match self.boards.get(&swimlane) {
                 Some(s) => s,
-                None => return Err(AppError::SwimlaneNotFoundError(format!("Swimlane {} not found.", swimlane)))
+                None => {
+                    return Err(AppError::SwimlaneNotFoundError(format!(
+                        "Swimlane {} not found.",
+                        swimlane
+                    )))
+                }
             };
             println!("====================");
             println!("{:#?}", swimlane.to_string());
@@ -143,10 +154,11 @@ impl KanbanBoard {
                     "Deadline".cell().bold(true),
                     "Parent Task".cell().bold(true),
                 ])
-                .display() {
-                    Ok(s) => s,
-                    Err(e) => return Err(AppError::TableDisplayParseError(e.to_string()))
-                };
+                .display()
+            {
+                Ok(s) => s,
+                Err(e) => return Err(AppError::TableDisplayParseError(e.to_string())),
+            };
 
             println!("{}", display_table);
         }
@@ -155,7 +167,7 @@ impl KanbanBoard {
     }
 
     /// Filter and display the tasks and subtasks based on deadline keyword provided.
-    /// 
+    ///
     /// - `no-deadline`: Shows all tasks and subtasks which don't have a deadline defined.
     /// - `past-deadline`: Shows all tasks and subtasks which are past their set deadline.
     /// - `today`: Shows all tasks and subtasks which have today's date as deadline.
@@ -171,7 +183,12 @@ impl KanbanBoard {
             let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file()?;
             let tasks: &Vec<String> = match self.boards.get(&swimlane) {
                 Some(s) => s,
-                None => return Err(AppError::SwimlaneNotFoundError(format!("Swimlane {} not found.", swimlane)))
+                None => {
+                    return Err(AppError::SwimlaneNotFoundError(format!(
+                        "Swimlane {} not found.",
+                        swimlane
+                    )))
+                }
             };
             println!("====================");
             println!("{:#?}", swimlane.to_string());
@@ -237,7 +254,12 @@ impl KanbanBoard {
                     let subtask_item: SubTaskItem = SubTaskItem::get_task(task_id)?;
                     let parent_task_id: String = match tasks_link.get_task_id(task_id) {
                         Some(s) => s,
-                        None => return Err(AppError::TaskNotFound(format!("Parent task not found for subtask {}", task_id)))
+                        None => {
+                            return Err(AppError::TaskNotFound(format!(
+                                "Parent task not found for subtask {}",
+                                task_id
+                            )))
+                        }
                     };
 
                     if keyword == "no-deadline" {
@@ -300,10 +322,11 @@ impl KanbanBoard {
                     "Deadline".cell().bold(true),
                     "Subtasks/Parent Task".cell().bold(true),
                 ])
-                .display() {
-                    Ok(s) => s,
-                    Err(e) => return Err(AppError::TableDisplayParseError(e.to_string()))
-                };
+                .display()
+            {
+                Ok(s) => s,
+                Err(e) => return Err(AppError::TableDisplayParseError(e.to_string())),
+            };
 
             println!("{}", display_table);
         }
@@ -312,7 +335,7 @@ impl KanbanBoard {
     }
 
     /// Filter and display the tasks and subtasks based on priority keyword provided.
-    /// 
+    ///
     /// - `high`: Shows all high priority tasks and subtasks.
     /// - `medium`: Shows all medium priority tasks and subtasks.
     /// - `low`: Shows all low priority tasks and subtasks.
@@ -326,7 +349,12 @@ impl KanbanBoard {
             let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file()?;
             let tasks: &Vec<String> = match self.boards.get(&swimlane) {
                 Some(s) => s,
-                None => return Err(AppError::SwimlaneNotFoundError(format!("Swimlane {} not found.", swimlane)))
+                None => {
+                    return Err(AppError::SwimlaneNotFoundError(format!(
+                        "Swimlane {} not found.",
+                        swimlane
+                    )))
+                }
             };
             println!("====================");
             println!("{:#?}", swimlane.to_string());
@@ -377,7 +405,12 @@ impl KanbanBoard {
                     };
                     let parent_task_id: String = match tasks_link.get_task_id(task_id) {
                         Some(s) => s,
-                        None => return Err(AppError::TaskNotFound(format!("Parent task not found for subtask {}", task_id)))
+                        None => {
+                            return Err(AppError::TaskNotFound(format!(
+                                "Parent task not found for subtask {}",
+                                task_id
+                            )))
+                        }
                     };
 
                     match keyword {
@@ -417,10 +450,11 @@ impl KanbanBoard {
                     "Deadline".cell().bold(true),
                     "Subtasks/Parent Task".cell().bold(true),
                 ])
-                .display() {
-                    Ok(s) => s,
-                    Err(e) => return Err(AppError::TableDisplayParseError(e.to_string()))
-                };
+                .display()
+            {
+                Ok(s) => s,
+                Err(e) => return Err(AppError::TableDisplayParseError(e.to_string())),
+            };
 
             println!("{}", display_table);
         }
@@ -439,7 +473,12 @@ impl KanbanBoard {
         ] {
             let tasks: Vec<String> = match self.boards.get(&swimlane) {
                 Some(s) => s.to_vec(),
-                None => return Err(AppError::SwimlaneNotFoundError(format!("Swimlane {} not found.", swimlane)))
+                None => {
+                    return Err(AppError::SwimlaneNotFoundError(format!(
+                        "Swimlane {} not found.",
+                        swimlane
+                    )))
+                }
             };
             for task_id in tasks {
                 if TaskItem::check_if_file_exists(&task_id)? == true {
@@ -481,19 +520,29 @@ impl KanbanBoard {
 
         let mut tasks_list: Vec<String> = match self.boards.get(&current_swimlane) {
             Some(s) => s.to_vec(),
-            None => return Err(AppError::SwimlaneNotFoundError(format!("Swimlane {} not found.", current_swimlane)))
+            None => {
+                return Err(AppError::SwimlaneNotFoundError(format!(
+                    "Swimlane {} not found.",
+                    current_swimlane
+                )))
+            }
         };
         match tasks_list.iter().position(|x| *x == task_id) {
             Some(s) => {
                 tasks_list.remove(s);
                 self.boards.insert(current_swimlane, tasks_list);
-            },
+            }
             None => {}
         };
 
         let mut tasks_list: Vec<String> = match self.boards.get(&new_swimlane) {
             Some(s) => s.to_vec(),
-            None => return Err(AppError::SwimlaneNotFoundError(format!("Swimlane {} not found.", new_swimlane)))
+            None => {
+                return Err(AppError::SwimlaneNotFoundError(format!(
+                    "Swimlane {} not found.",
+                    new_swimlane
+                )))
+            }
         };
         tasks_list.push(task_id);
         self.boards.insert(new_swimlane, tasks_list);
@@ -505,13 +554,18 @@ impl KanbanBoard {
     pub fn delete_task(&mut self, task_id: String, swimlane: TaskStatus) -> Result<(), AppError> {
         let mut tasks_list: Vec<String> = match self.boards.get(&swimlane) {
             Some(s) => s.to_vec(),
-            None => return Err(AppError::SwimlaneNotFoundError(format!("Swimlane {} not found.", swimlane)))
+            None => {
+                return Err(AppError::SwimlaneNotFoundError(format!(
+                    "Swimlane {} not found.",
+                    swimlane
+                )))
+            }
         };
         match tasks_list.iter().position(|x| *x == task_id) {
             Some(s) => {
                 tasks_list.remove(s);
                 self.boards.insert(swimlane, tasks_list);
-            },
+            }
             None => {}
         };
         self.write_to_file()?;

@@ -22,7 +22,7 @@ pub enum AppError {
     TaskNotFound(String),
     NaiveDateConversionError(String),
     TableDisplayParseError(String),
-    SwimlaneNotFoundError(String)
+    SwimlaneNotFoundError(String),
 }
 
 impl std::fmt::Display for AppError {
@@ -54,7 +54,9 @@ impl std::fmt::Display for AppError {
             AppError::InvalidDeadlineKeyword(err) => write!(f, "[InvalidDeadlineKeyword] {}", err),
             AppError::InvalidPriorityKeyword(err) => write!(f, "[InvalidPriorityKeyword] {}", err),
             AppError::TaskNotFound(err) => write!(f, "[TaskNotFound] {}", err),
-            AppError::NaiveDateConversionError(err) => write!(f, "[NaiveDateConversionError] {}", err),
+            AppError::NaiveDateConversionError(err) => {
+                write!(f, "[NaiveDateConversionError] {}", err)
+            }
             AppError::TableDisplayParseError(err) => write!(f, "[TableDisplayParseError] {}", err),
             AppError::SwimlaneNotFoundError(err) => write!(f, "[SwimlaneNotFoundError] {}", err),
         }

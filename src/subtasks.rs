@@ -120,7 +120,12 @@ impl SubTaskItem {
         };
         let task_id: String = match tasks_link.get_task_id(subtask_id) {
             Some(s) => s,
-            None => return Err(AppError::TaskNotFound(format!("No parent task found for subtask {}", subtask_id)))
+            None => {
+                return Err(AppError::TaskNotFound(format!(
+                    "No parent task found for subtask {}",
+                    subtask_id
+                )))
+            }
         };
         let display_vec: Vec<Vec<String>> = vec![
             vec!["Subtask ID".to_string(), subtask_item.subtask_id],
@@ -146,7 +151,7 @@ impl SubTaskItem {
 
         let display_table: TableDisplay = match display_vec.table().display() {
             Ok(s) => s,
-            Err(e) => return Err(AppError::TableDisplayParseError(e.to_string()))
+            Err(e) => return Err(AppError::TableDisplayParseError(e.to_string())),
         };
 
         Ok(display_table)

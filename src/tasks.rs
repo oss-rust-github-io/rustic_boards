@@ -34,7 +34,7 @@ pub struct TaskItem {
 
     /// Date when task got completed
     pub task_completed_on: Option<TimeStamp>,
-    
+
     /// Status of the task
     pub task_status: TaskStatus,
 
@@ -144,7 +144,7 @@ impl TaskItem {
 
         let display_table: TableDisplay = match display_vec.table().display() {
             Ok(s) => s,
-            Err(e) => return Err(AppError::TableDisplayParseError(e.to_string()))
+            Err(e) => return Err(AppError::TableDisplayParseError(e.to_string())),
         };
 
         Ok(display_table)

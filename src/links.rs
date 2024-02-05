@@ -1,8 +1,8 @@
 //! Defines the structure for task-to-subtask link along with associated helper methods
 
+use crate::{constants::TAKS_LINK_FILE, error::AppError, utils::create_app_dirs};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::Path};
-use crate::{constants::TAKS_LINK_FILE, error::AppError, utils::create_app_dirs};
 
 /// Rust structure for task-to-subtask link
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
@@ -60,7 +60,7 @@ impl TaskToSubtaskMap {
     pub fn delete_subtask(&mut self, subtask_id: String) -> Result<(), AppError> {
         let mut parent_task_id: String = String::new();
         let mut updated_subtasks_list: Vec<String> = Vec::new();
-        
+
         for (task_id, subtasks_list) in &self.tasks {
             if subtasks_list.contains(&subtask_id) {
                 parent_task_id = task_id.to_string();
@@ -69,21 +69,23 @@ impl TaskToSubtaskMap {
             }
         }
 
-        match updated_subtasks_list
-            .iter()
-            .position(|x| *x == subtask_id) {
-                Some(s) => {
-                    updated_subtasks_list.remove(s);
-                    self.tasks.insert(parent_task_id, updated_subtasks_list);
-                    self.write_to_file()?;
-                    return Ok(())
-                },
-                None => Ok(())
+        match updated_subtasks_list.iter().position(|x| *x == subtask_id) {
+            Some(s) => {
+                updated_subtasks_list.remove(s);
+                self.tasks.insert(parent_task_id, updated_subtasks_list);
+                self.write_to_file()?;
+                return Ok(());
             }
+            None => Ok(()),
+        }
     }
 
     /// Add a new task-to-subtask link with given Task and SubTask IDs
-    pub fn add_new_link(&mut self, task_id: String, subtask_list: &Vec<String>) -> Result<(), AppError> {
+    pub fn add_new_link(
+        &mut self,
+        task_id: String,
+        subtask_list: &Vec<String>,
+    ) -> Result<(), AppError> {
         let mut current_subtasks_list: Vec<String> = match self.tasks.get(&task_id) {
             Some(s) => s.to_vec(),
             None => Vec::new(),
@@ -105,12 +107,12 @@ impl TaskToSubtaskMap {
             Some(s) => s.to_vec(),
             None => return Err(AppError::TaskNotFound(current_task_id)),
         };
-        
+
         match subtasks_list.iter().position(|x| *x == subtask_id) {
             Some(s) => {
                 subtasks_list.remove(s);
                 self.tasks.insert(current_task_id, subtasks_list);
-            },
+            }
             None => {}
         };
 
