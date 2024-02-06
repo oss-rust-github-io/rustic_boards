@@ -798,6 +798,8 @@ pub fn main() {
                     vec!["link subtask <SubTask ID>", "To link a subtask to different parent task"],
                     vec!["show task <Swimlane>", "To view all tasks in given swimlane \n(to-do, in-progress, blocked, in-review, done, all)"],
                     vec!["show subtask <Swimlane>", "To view all subtasks in given swimlane \n(to-do, in-progress, blocked, in-review, done, all)"],
+                    vec!["add notes <Task or SubTask ID>", "To add notes to an existing task or subtask"],
+                    vec!["show notes <Task or SubTask ID>", "To view notes for an existing task or subtask"],
                     vec!["filter due <Keyword>", "To filter all tasks and subtasks based on deadline \n(past-deadline, today, tomorrow, after-tomorrow)"],
                     vec!["filter priority <Keyword>", "To filter all tasks and subtasks based on priority \n(high, medium, low)"],
                     vec!["help", "To view all commands for the application"],
