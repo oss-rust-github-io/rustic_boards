@@ -705,38 +705,82 @@ pub fn main() {
             }
             ["add", "notes", task_id] => {
                 let mut notes_list: Vec<String> = Vec::new();
+                let mut task_exists: bool = false;
 
-                let note: String = text_input_prompt("Add a note:", None).unwrap();
-                notes_list.push(note);
-                
-                loop {
-                    let notes_check: bool = confirm_prompt(
-                        "Do you want to add another note?",
-                        None,
-                    )
-                    .unwrap();
-
-                    if notes_check == true {
-                        let note: String = text_input_prompt("Add a note:", None).unwrap();
-                        notes_list.push(note);
-                    } else {
-                        break;
-                    }
+                match TaskItem::check_if_file_exists(&task_id.to_string()) {
+                    Ok(s) => {
+                        task_exists = s
+                    },
+                    Err(e) => println!("{} {}", e.to_string(), task_id)
                 };
+                
+                if task_exists == false {
+                    match SubTaskItem::check_if_file_exists(&task_id.to_string()) {
+                        Ok(s) => {
+                            task_exists = s
+                        },
+                        Err(e) => println!("{} {}", e.to_string(), task_id)
+                    };
+                }
 
-                task_notes.add_new_note(task_id.to_string(), notes_list).unwrap_or_else(|err| {
-                    println!("{}", err.to_string());
-                });
+                if task_exists == true {
+                    let note: String = text_input_prompt("Add a note:", None).unwrap();
+                    notes_list.push(note);
+                    
+                    loop {
+                        let notes_check: bool = confirm_prompt(
+                            "Do you want to add another note?",
+                            None,
+                        )
+                        .unwrap();
+
+                        if notes_check == true {
+                            let note: String = text_input_prompt("Add a note:", None).unwrap();
+                            notes_list.push(note);
+                        } else {
+                            break;
+                        }
+                    };
+
+                    task_notes.add_new_note(task_id.to_string(), notes_list).unwrap_or_else(|err| {
+                        println!("{}", err.to_string());
+                    });
+
+                    println!("Notes added successfully to {}.", task_id);
+                } else {
+                    println!("{} not found.", task_id)
+                }
             }
             ["show", "notes", task_id] => {
                 let notes_list: Vec<String> = task_notes.get_notes(task_id.to_string());
+                let mut task_exists: bool = false;
 
-                if notes_list.len() == 0 {
-                    println!("No notes found.");
-                } else {
-                    for (idx, note) in notes_list.iter().enumerate() {
-                        println!("{}) {}", idx+1, note);
+                match TaskItem::check_if_file_exists(&task_id.to_string()) {
+                    Ok(s) => {
+                        task_exists = s
+                    },
+                    Err(e) => println!("{} {}", e.to_string(), task_id)
+                };
+                
+                if task_exists == false {
+                    match SubTaskItem::check_if_file_exists(&task_id.to_string()) {
+                        Ok(s) => {
+                            task_exists = s
+                        },
+                        Err(e) => println!("{} {}", e.to_string(), task_id)
+                    };
+                }
+
+                if task_exists == true {
+                    if notes_list.len() == 0 {
+                        println!("No notes found.");
+                    } else {
+                        for (idx, note) in notes_list.iter().enumerate() {
+                            println!("{}) {}", idx+1, note);
+                        }
                     }
+                } else {
+                    println!("{} not found.", task_id)
                 }
             }
             ["help"] => {
@@ -775,6 +819,7 @@ pub fn main() {
             ["exit"] => {
                 break;
             }
+            [] => {}
             _ => {
                 println!("{}", AppError::InvalidCommand(user_input));
             }

@@ -2,7 +2,7 @@
 
 ![](https://img.shields.io/badge/license-MIT-green)
 ![](https://img.shields.io/badge/powered%20by-Rust-blue)
-![](https://img.shields.io/badge/crates.io-v0.1.1-blue
+![](https://img.shields.io/badge/crates.io-v0.1.2-blue
 )
 
 Rustic Boards is a sleek and powerful CLI-based Kanban board application built with Rust, combining performance and usability for seamless task management. 
