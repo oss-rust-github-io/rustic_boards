@@ -5,6 +5,7 @@ use crate::{
     error::AppError,
     links::TaskToSubtaskMap,
     utils::create_app_dirs,
+    notes::TaskNotes,
     TaskPriority, TaskStatus, TimeStamp,
 };
 use cli_table::{Table, TableDisplay};
@@ -97,8 +98,9 @@ impl TaskItem {
     }
 
     /// Show all information for given Task ID
-    pub fn show_task(task_id: &String) -> Result<TableDisplay, AppError> {
+    pub fn show_task(task_id: &String) -> Result<(), AppError> {
         let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file()?;
+        let task_notes: TaskNotes = TaskNotes::load_from_file()?;
         let task_item: TaskItem = TaskItem::get_task(&task_id.to_string())?;
         let task_added_on: String = task_item
             .task_added_on
@@ -118,6 +120,7 @@ impl TaskItem {
             None => "None".to_string(),
         };
         let subtasks_list: Vec<String> = tasks_link.get_subtasks_list(task_id);
+        let notes_list: Vec<String> = task_notes.get_notes(task_id.to_string());
 
         let display_vec: Vec<Vec<String>> = vec![
             vec!["Task ID".to_string(), task_item.task_id],
@@ -146,8 +149,18 @@ impl TaskItem {
             Ok(s) => s,
             Err(e) => return Err(AppError::TableDisplayParseError(e.to_string())),
         };
+        println!("{}", display_table);
 
-        Ok(display_table)
+        if notes_list.len() == 0 {
+            println!("No notes found.");
+        } else {
+            println!("Additional Notes:");
+            for (idx, note) in notes_list.iter().enumerate() {
+                println!("{}) {}", idx+1, note);
+            }
+        }
+
+        Ok(())
     }
 
     /// Move given Task ID from one swimlane to another in Kanban Board

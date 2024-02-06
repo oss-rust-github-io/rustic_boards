@@ -17,3 +17,6 @@ pub const KANBAN_BOARD_FILE: &str = "boards.bin";
 
 /// File to store all task-to-subtask link information
 pub const TAKS_LINK_FILE: &str = "tasks_link.bin";
+
+/// File to store all notes information for Tasks and SubTasks
+pub const NOTES_FILE: &str = "notes.bin";

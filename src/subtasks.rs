@@ -3,6 +3,7 @@
 use crate::{
     constants::{ACTIVE_SUBTASKS_PATH, DIGITS_IN_TASK_ID},
     error::AppError,
+    notes::TaskNotes,
     links::TaskToSubtaskMap,
     utils::create_app_dirs,
     TaskPriority, TaskStatus, TimeStamp,
@@ -98,8 +99,9 @@ impl SubTaskItem {
     }
 
     /// Show all information for given SubTask ID
-    pub fn show_task(subtask_id: &String) -> Result<TableDisplay, AppError> {
+    pub fn show_task(subtask_id: &String) -> Result<(), AppError> {
         let tasks_link: TaskToSubtaskMap = TaskToSubtaskMap::load_from_file()?;
+        let task_notes: TaskNotes = TaskNotes::load_from_file()?;
         let subtask_item: SubTaskItem = SubTaskItem::get_task(&subtask_id.to_string())?;
         let subtask_added_on: String = subtask_item
             .subtask_added_on
@@ -127,6 +129,7 @@ impl SubTaskItem {
                 )))
             }
         };
+        let notes_list: Vec<String> = task_notes.get_notes(subtask_id.to_string());
         let display_vec: Vec<Vec<String>> = vec![
             vec!["Subtask ID".to_string(), subtask_item.subtask_id],
             vec!["Subtask Name".to_string(), subtask_item.subtask_name],
@@ -154,7 +157,18 @@ impl SubTaskItem {
             Err(e) => return Err(AppError::TableDisplayParseError(e.to_string())),
         };
 
-        Ok(display_table)
+        println!("{}", display_table);
+
+        if notes_list.len() == 0 {
+            println!("No notes found.");
+        } else {
+            println!("Additional Notes:");
+            for (idx, note) in notes_list.iter().enumerate() {
+                println!("{}) {}", idx+1, note);
+            }
+        }
+
+        Ok(())
     }
 
     /// Move given SubTask ID from one swimlane to another in Kanban Board
