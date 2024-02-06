@@ -1,6 +1,6 @@
 [package]
 name = "rustic_boards"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 authors = ["Tapas Das <dlaststark@gmail.com>"]
 description = "Rustic Boards is a sleek and powerful CLI-based Kanban board application built with Rust, combining performance and usability for seamless task management."

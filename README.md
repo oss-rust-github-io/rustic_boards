@@ -2,7 +2,7 @@
 
 ![](https://img.shields.io/badge/license-MIT-green)
 ![](https://img.shields.io/badge/powered%20by-Rust-blue)
-![](https://img.shields.io/badge/crates.io-v0.1.0-blue
+![](https://img.shields.io/badge/crates.io-v0.1.2-blue
 )
 
 Rustic Boards is a sleek and powerful CLI-based Kanban board application built with Rust, combining performance and usability for seamless task management. 
@@ -18,8 +18,9 @@ Built on the robust foundations of Rust, known for its speed, safety, and memory
 1. Clear and intuitive CLI command structure
 2. Simple binary format for storing the Kanban board data
 3. Organize tasks into status categories (e.g., "To Do", "In Progress", "Blocked", "In Review", "Done") to represent the workflow stages
-4. Robust input validation to handle unexpected user inputs gracefully
-5. Provide clear and helpful error messages to guide users when mistakes or issues occur
+4. Add notes for tasks and subtasks to track granular details
+5. Robust input validation to handle unexpected user inputs gracefully
+6. Provide clear and helpful error messages to guide users when mistakes or issues occur
 
 ## CLI Commands
 
@@ -38,6 +39,8 @@ Built on the robust foundations of Rust, known for its speed, safety, and memory
 | `link subtask <SubTask ID>` | To link a subtask to different parent task |
 | `show task <Swimlane>` | To view all tasks in given swimlane <br> (to-do, in-progress, blocked, in-review, done, all) |
 | `show subtask <Swimlane>` | To view all subtasks in given swimlane <br> (to-do, in-progress, blocked, in-review, done, all) |
+| `add notes <Task or SubTask ID>` | To add notes to an existing task or subtask |
+| `show notes <Task or SubTask ID>` | To view notes for an existing task or subtask |
 | `filter due <Keyword>` | To filter all tasks and subtasks based on deadline <br> (past-deadline, today, tomorrow, after-tomorrow) |
 | `filter priority <Keyword>` | To filter all tasks and subtasks based on priority <br> (high, medium, low) |
 | `help` | To view all commands for the application |

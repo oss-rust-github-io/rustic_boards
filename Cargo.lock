@@ -369,7 +369,7 @@ dependencies = [
 
 [[package]]
 name = "rustic_boards"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "bincode",
  "chrono",

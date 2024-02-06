@@ -33,6 +33,8 @@
 //! | `link subtask <SubTask ID>` | To link a subtask to different parent task |
 //! | `show task <Swimlane>` | To view all tasks in given swimlane <br> (to-do, in-progress, blocked, in-review, done, all) |
 //! | `show subtask <Swimlane>` | To view all subtasks in given swimlane <br> (to-do, in-progress, blocked, in-review, done, all) |
+//! | `add notes <Task or SubTask ID>` | To add notes to an existing task or subtask |
+//! | `show notes <Task or SubTask ID>` | To view notes for an existing task or subtask |
 //! | `filter due <Keyword>` | To filter all tasks and subtasks based on deadline <br> (past-deadline, today, tomorrow, after-tomorrow) |
 //! | `filter priority <Keyword>` | To filter all tasks and subtasks based on priority <br> (high, medium, low) |
 //! | `help` | To view all commands for the application |
@@ -46,11 +48,13 @@ pub mod boards;
 pub mod constants;
 pub mod error;
 pub mod links;
+pub mod notes;
 pub mod prompt;
 pub mod subtasks;
 pub mod tasks;
 pub mod utils;
 
+use notes::TaskNotes;
 use boards::KanbanBoard;
 use chrono::prelude::NaiveDate;
 use cli_table::{Cell, Style, Table};
@@ -64,7 +68,8 @@ use subtasks::SubTaskItem;
 use tasks::TaskItem;
 use utils::{TaskPriority, TaskStatus, TimeStamp};
 
-fn main() {
+/// Entry point into the application
+pub fn main() {
     let boards_file_exists: bool = KanbanBoard::check_if_file_exists().unwrap();
     let mut boards: KanbanBoard = match boards_file_exists {
         true => KanbanBoard::load_from_file().unwrap(),
@@ -108,6 +113,12 @@ fn main() {
         false => TaskToSubtaskMap::new(),
     };
 
+    let notes_file_exists: bool = TaskNotes::check_if_file_exists().unwrap();
+    let mut task_notes: TaskNotes = match notes_file_exists {
+        true => TaskNotes::load_from_file().unwrap(),
+        false => TaskNotes::new(),
+    };
+
     loop {
         let mut user_input: String = String::new();
         print!("boards> ");
@@ -145,6 +156,26 @@ fn main() {
                     .unwrap_or_else(|err| {
                         println!("{}", err.to_string());
                     });
+                
+                let mut notes_list: Vec<String> = Vec::new();
+                loop {
+                    let notes_check: bool = confirm_prompt(
+                        "Do you want to add notes for this task?",
+                        None,
+                    )
+                    .unwrap();
+
+                    if notes_check == true {
+                        let note: String = text_input_prompt("Add a note:", None).unwrap();
+                        notes_list.push(note);
+                    } else {
+                        break;
+                    }
+                };
+
+                task_notes.add_new_note(task_item.task_id.clone(), notes_list).unwrap_or_else(|err| {
+                    println!("{}", err.to_string());
+                });
 
                 let mut subtasks_list: Vec<String> = Vec::new();
                 loop {
@@ -174,6 +205,22 @@ fn main() {
                             false => None,
                         };
 
+                        let mut notes_list: Vec<String> = Vec::new();
+                        loop {
+                            let notes_check: bool = confirm_prompt(
+                                "Do you want to add notes for this subtask?",
+                                None,
+                            )
+                            .unwrap();
+
+                            if notes_check == true {
+                                let note: String = text_input_prompt("Add a note:", None).unwrap();
+                                notes_list.push(note);
+                            } else {
+                                break;
+                            }
+                        };
+
                         let subtask_item: SubTaskItem = SubTaskItem::new(
                             subtask_name,
                             subtask_description,
@@ -193,6 +240,9 @@ fn main() {
                             .unwrap_or_else(|err| {
                                 println!("{}", err.to_string());
                             });
+                        task_notes.add_new_note(subtask_item.subtask_id.clone(), notes_list).unwrap_or_else(|err| {
+                            println!("{}", err.to_string());
+                        });
                     } else {
                         break;
                     }
@@ -229,6 +279,22 @@ fn main() {
                     false => None,
                 };
 
+                let mut notes_list: Vec<String> = Vec::new();
+                loop {
+                    let notes_check: bool = confirm_prompt(
+                        "Do you want to add notes for this subtask?",
+                        None,
+                    )
+                    .unwrap();
+
+                    if notes_check == true {
+                        let note: String = text_input_prompt("Add a note:", None).unwrap();
+                        notes_list.push(note);
+                    } else {
+                        break;
+                    }
+                };
+
                 let task_id: String =
                     tasks_select_prompt("Select task id to link to:", &boards).unwrap();
                 let subtask_item: SubTaskItem = SubTaskItem::new(
@@ -251,6 +317,9 @@ fn main() {
                     .unwrap_or_else(|err| {
                         println!("{}", err.to_string());
                     });
+                task_notes.add_new_note(subtask_item.subtask_id.clone(), notes_list).unwrap_or_else(|err| {
+                    println!("{}", err.to_string());
+                });
                 println!(
                     "{} created successfully and linked to parent {}.",
                     subtask_item.subtask_id, task_id
@@ -297,6 +366,26 @@ fn main() {
                     }
                 };
 
+                let mut notes_list: Vec<String> = Vec::new();
+                loop {
+                    let notes_check: bool = confirm_prompt(
+                        "Do you want to add notes for this task?",
+                        None,
+                    )
+                    .unwrap();
+
+                    if notes_check == true {
+                        let note: String = text_input_prompt("Add a note:", None).unwrap();
+                        notes_list.push(note);
+                    } else {
+                        break;
+                    }
+                };
+
+                task_notes.add_new_note(task_id.to_string().clone(), notes_list).unwrap_or_else(|err| {
+                    println!("{}", err.to_string());
+                });
+
                 let mut subtasks_list: Vec<String> = Vec::new();
                 loop {
                     let subtask_check: bool =
@@ -325,6 +414,22 @@ fn main() {
                             false => None,
                         };
 
+                        let mut notes_list: Vec<String> = Vec::new();
+                        loop {
+                            let notes_check: bool = confirm_prompt(
+                                "Do you want to add notes for this subtask?",
+                                None,
+                            )
+                            .unwrap();
+
+                            if notes_check == true {
+                                let note: String = text_input_prompt("Add a note:", None).unwrap();
+                                notes_list.push(note);
+                            } else {
+                                break;
+                            }
+                        };
+
                         let subtask_item: SubTaskItem = SubTaskItem::new(
                             subtask_name,
                             subtask_description,
@@ -344,6 +449,9 @@ fn main() {
                             .unwrap_or_else(|err| {
                                 println!("{}", err.to_string());
                             });
+                        task_notes.add_new_note(subtask_item.subtask_id.clone(), notes_list).unwrap_or_else(|err| {
+                            println!("{}", err.to_string());
+                        });
                     } else {
                         break;
                     }
@@ -428,6 +536,26 @@ fn main() {
                         .unwrap();
                 }
 
+                let mut notes_list: Vec<String> = Vec::new();
+                loop {
+                    let notes_check: bool = confirm_prompt(
+                        "Do you want to add notes for this subtask?",
+                        None,
+                    )
+                    .unwrap();
+
+                    if notes_check == true {
+                        let note: String = text_input_prompt("Add a note:", None).unwrap();
+                        notes_list.push(note);
+                    } else {
+                        break;
+                    }
+                };
+
+                task_notes.add_new_note(subtask_id.to_string().clone(), notes_list).unwrap_or_else(|err| {
+                    println!("{}", err.to_string());
+                });
+
                 subtask_item.subtask_description = subtask_description;
                 subtask_item.subtask_priority = subtask_priority;
                 subtask_item.subtask_deadline = subtask_deadline;
@@ -485,20 +613,17 @@ fn main() {
             }
             ["open", "task", task_id] => {
                 match TaskItem::check_if_file_exists(&task_id.to_string()).unwrap() {
-                    true => {
-                        println!("{}", TaskItem::show_task(&task_id.to_string()).unwrap());
-                    }
+                    true => TaskItem::show_task(&task_id.to_string()).unwrap_or_else(|err| {
+                        println!("{}", err.to_string());
+                    }),
                     false => println!("{}\n", AppError::TaskNotFound(task_id.to_string())),
                 }
             }
             ["open", "subtask", subtask_id] => {
                 match SubTaskItem::check_if_file_exists(&subtask_id.to_string()).unwrap() {
-                    true => {
-                        println!(
-                            "{}",
-                            SubTaskItem::show_task(&subtask_id.to_string()).unwrap()
-                        );
-                    }
+                    true => SubTaskItem::show_task(&subtask_id.to_string()).unwrap_or_else(|err| {
+                        println!("{}", err.to_string());
+                    }),
                     false => println!("{}\n", AppError::TaskNotFound(subtask_id.to_string())),
                 }
             }
@@ -578,6 +703,86 @@ fn main() {
                     println!("{}", err);
                 });
             }
+            ["add", "notes", task_id] => {
+                let mut notes_list: Vec<String> = Vec::new();
+                let mut task_exists: bool = false;
+
+                match TaskItem::check_if_file_exists(&task_id.to_string()) {
+                    Ok(s) => {
+                        task_exists = s
+                    },
+                    Err(e) => println!("{} {}", e.to_string(), task_id)
+                };
+                
+                if task_exists == false {
+                    match SubTaskItem::check_if_file_exists(&task_id.to_string()) {
+                        Ok(s) => {
+                            task_exists = s
+                        },
+                        Err(e) => println!("{} {}", e.to_string(), task_id)
+                    };
+                }
+
+                if task_exists == true {
+                    let note: String = text_input_prompt("Add a note:", None).unwrap();
+                    notes_list.push(note);
+                    
+                    loop {
+                        let notes_check: bool = confirm_prompt(
+                            "Do you want to add another note?",
+                            None,
+                        )
+                        .unwrap();
+
+                        if notes_check == true {
+                            let note: String = text_input_prompt("Add a note:", None).unwrap();
+                            notes_list.push(note);
+                        } else {
+                            break;
+                        }
+                    };
+
+                    task_notes.add_new_note(task_id.to_string(), notes_list).unwrap_or_else(|err| {
+                        println!("{}", err.to_string());
+                    });
+
+                    println!("Notes added successfully to {}.", task_id);
+                } else {
+                    println!("{} not found.", task_id)
+                }
+            }
+            ["show", "notes", task_id] => {
+                let notes_list: Vec<String> = task_notes.get_notes(task_id.to_string());
+                let mut task_exists: bool = false;
+
+                match TaskItem::check_if_file_exists(&task_id.to_string()) {
+                    Ok(s) => {
+                        task_exists = s
+                    },
+                    Err(e) => println!("{} {}", e.to_string(), task_id)
+                };
+                
+                if task_exists == false {
+                    match SubTaskItem::check_if_file_exists(&task_id.to_string()) {
+                        Ok(s) => {
+                            task_exists = s
+                        },
+                        Err(e) => println!("{} {}", e.to_string(), task_id)
+                    };
+                }
+
+                if task_exists == true {
+                    if notes_list.len() == 0 {
+                        println!("No notes found.");
+                    } else {
+                        for (idx, note) in notes_list.iter().enumerate() {
+                            println!("{}) {}", idx+1, note);
+                        }
+                    }
+                } else {
+                    println!("{} not found.", task_id)
+                }
+            }
             ["help"] => {
                 let display_vec: Vec<Vec<&str>> = vec![
                     vec!["add task", "To add a new task into board (along with subtasks - optional)"],
@@ -614,6 +819,7 @@ fn main() {
             ["exit"] => {
                 break;
             }
+            [] => {}
             _ => {
                 println!("{}", AppError::InvalidCommand(user_input));
             }
